@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Filter, GitBranch, Lock, Star, Code, Loader2 } from "lucide-react";
+import { Search, Filter, GitBranch, Lock, Star, Code, Loader2, Network, MessageSquare, Skull } from "lucide-react";
 
 interface Repo {
     id: number;
@@ -29,6 +29,7 @@ export function RepoList({ initialRepos = [] }: RepoListProps) {
     const [searchQuery, setSearchQuery] = useState("");
     const [filter, setFilter] = useState<FilterType>("all");
     const [trackedRepos, setTrackedRepos] = useState<Set<number>>(new Set());
+    const [trackedRepoConfigs, setTrackedRepoConfigs] = useState<Record<string, { postToLinkedIn: boolean; postToTwitter: boolean; yoloMode: boolean }>>({});
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [showUntrackModal, setShowUntrackModal] = useState(false);
@@ -61,6 +62,10 @@ export function RepoList({ initialRepos = [] }: RepoListProps) {
                             }
                         });
                         setTrackedRepos(trackedSet);
+                    }
+                    // Load tracked repo configs
+                    if (data.trackedRepoConfigs) {
+                        setTrackedRepoConfigs(data.trackedRepoConfigs);
                     }
                     setIsLoadingRepos(false);
                 })
@@ -124,6 +129,11 @@ export function RepoList({ initialRepos = [] }: RepoListProps) {
             const newTracked = new Set(trackedRepos);
             newTracked.delete(repoToUntrack.id);
             setTrackedRepos(newTracked);
+
+            // Remove config from state
+            const newConfigs = { ...trackedRepoConfigs };
+            delete newConfigs[repoToUntrack.fullName];
+            setTrackedRepoConfigs(newConfigs);
 
             // Close modal
             setShowUntrackModal(false);
@@ -276,7 +286,7 @@ export function RepoList({ initialRepos = [] }: RepoListProps) {
                         <p className="text-sm text-white/60">Try adjusting your search or filters</p>
                     </div>
                 ) : (
-                    filteredRepos.map((repo, index) => {
+                    filteredRepos.map((repo) => {
                         const isTracked = trackedRepos.has(repo.id);
                         return (
                             <div
@@ -333,6 +343,28 @@ export function RepoList({ initialRepos = [] }: RepoListProps) {
                                             </div>
                                         </div>
                                     </div>
+                                    
+                                    {/* Tracking Settings Icons */}
+                                    {isTracked && trackedRepoConfigs[repo.fullName] && (
+                                        <div className="flex items-center gap-2 shrink-0">
+                                            {trackedRepoConfigs[repo.fullName].postToLinkedIn && (
+                                                <div className="p-2 bg-blue-600/20 border border-blue-500/30 rounded-lg" title="LinkedIn posting enabled">
+                                                    <Network className="w-5 h-5 text-blue-400" />
+                                                </div>
+                                            )}
+                                            {trackedRepoConfigs[repo.fullName].postToTwitter && (
+                                                <div className="p-2 bg-gray-600/20 border border-gray-500/30 rounded-lg" title="X (Twitter) posting enabled">
+                                                    <MessageSquare className="w-5 h-5 text-gray-400" />
+                                                </div>
+                                            )}
+                                            {trackedRepoConfigs[repo.fullName].yoloMode && (
+                                                <div className="p-2 bg-red-600/20 border border-red-500/30 rounded-lg" title="Hardcore mode enabled">
+                                                    <Skull className="w-5 h-5 text-red-400" />
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                    
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();

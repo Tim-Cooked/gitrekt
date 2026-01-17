@@ -40,7 +40,7 @@ export default async function Dashboard() {
                             Welcome back, <span className="bg-linear-to-r from-purple-300 to-pink-300 bg-clip-text text-transparent">{session.user.name || "Developer"}</span>
                         </h2>
                     </div>
-                    <p className="text-white/70 text-lg leading-relaxed max-w-2xl">
+                    <p className="text-white/70 text-lg leading-relaxed whitespace-nowrap">
                         Select repositories to track and prepare for consequences when your code breaks.
                     </p>
                 </div>

@@ -83,7 +83,7 @@ export default function ConfigureTrackingPage({ params }: { params: Promise<{ sl
                 throw new Error(data.error || "Failed to track repository");
             }
 
-            router.push(`/dashboard/repos/${repoFullName}`);
+            router.push(`/dashboard`);
         } catch (err) {
             setError(err instanceof Error ? err.message : "Something went wrong");
         } finally {
