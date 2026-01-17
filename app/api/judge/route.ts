@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCommitDiff, getCommitInfo } from "@/lib/github";
+import { getCommitDiff, getCommitInfo, GITREKT_COMMIT_MESSAGES } from "@/lib/github";
 import { judgeCode, generateRoast } from "@/lib/llm";
 
 export async function POST(req: NextRequest) {
@@ -30,13 +30,7 @@ export async function POST(req: NextRequest) {
         const commitInfo = await getCommitInfo(repo, trackedRepo.accessToken, sha);
 
         // Skip GitRekt workflow commits
-        const gitRektCommitMessages = [
-            "Setup GitRekt workflow",
-            "Update GitRekt workflow",
-            "Initialize GitRekt Repository",
-        ];
-        
-        if (gitRektCommitMessages.some(msg => commitInfo.message.startsWith(msg))) {
+        if (GITREKT_COMMIT_MESSAGES.some(msg => commitInfo.message.startsWith(msg))) {
             console.log(`⏭️ Skipping GitRekt system commit: ${commitInfo.message}`);
             return NextResponse.json({
                 verdict: "skip",

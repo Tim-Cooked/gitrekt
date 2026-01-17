@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { createWebhook, getDefaultBranch, isRepoEmpty } from "@/lib/github";
+import { createWebhook, getDefaultBranch, isRepoEmpty, deleteWebhook, deleteWorkflow } from "@/lib/github";
 
 async function installWatchdog(repoName: string, accessToken: string) {
     const defaultBranch = await getDefaultBranch(repoName, accessToken);
@@ -193,9 +193,25 @@ export async function POST(request: Request) {
                 throw new Error(`Workflow installation failed: ${errorMsg}`);
             }
         } else {
+            // Remove from database
             await prisma.trackedRepo
                 .delete({ where: { repoName: repoFullName } })
                 .catch(() => {});
+
+            // Delete webhook and workflow
+            try {
+                await deleteWebhook(repoFullName, accessToken);
+            } catch (error) {
+                console.error("Error deleting webhook:", error);
+                // Continue even if webhook deletion fails
+            }
+
+            try {
+                await deleteWorkflow(repoFullName, accessToken);
+            } catch (error) {
+                console.error("Error deleting workflow:", error);
+                // Continue even if workflow deletion fails
+            }
         }
 
         return NextResponse.json({ success: true, tracked });
