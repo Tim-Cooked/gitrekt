@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
 import { Search, Filter, GitBranch, Lock, Star, Code, Loader2 } from "lucide-react";
 
 interface Repo {
@@ -23,7 +22,6 @@ interface RepoListProps {
 type FilterType = "all" | "private" | "public" | "tracked";
 
 export function RepoList({ initialRepos = [] }: RepoListProps) {
-    const router = useRouter();
     const [repos, setRepos] = useState<Repo[]>(initialRepos);
     const [isLoadingRepos, setIsLoadingRepos] = useState(initialRepos.length === 0);
     const [searchQuery, setSearchQuery] = useState("");
@@ -140,7 +138,7 @@ export function RepoList({ initialRepos = [] }: RepoListProps) {
     return (
         <div className="space-y-6">
             {/* Search and Filter Bar */}
-            <div className="flex flex-col sm:flex-row gap-4 sticky top-0 z-10 bg-gradient-to-b from-indigo-950/98 via-indigo-950/95 to-transparent backdrop-blur-xl pb-4 pt-2 -mx-4 px-4">
+            <div className="flex flex-col sm:flex-row gap-4 sticky top-0 z-10 bg-linear-to-b from-indigo-950/95 to-indigo-900/95 backdrop-blur-sm pb-4 pt-4 rounded-xl px-4 border border-white/10">
                 <div className="relative flex-1">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/50 w-5 h-5 pointer-events-none transition-colors duration-200" />
                     <input
@@ -148,7 +146,7 @@ export function RepoList({ initialRepos = [] }: RepoListProps) {
                         placeholder="Search repositories..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3.5 bg-white/[0.04] border border-white/10 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/40 transition-all shadow-lg shadow-black/10 backdrop-blur-sm hover:bg-white/[0.06] hover:border-white/20 focus:shadow-xl focus:shadow-purple-500/10"
+                        className="w-full pl-12 pr-4 py-3.5 bg-white/4 border border-white/10 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/40 transition-all shadow-lg shadow-black/10 backdrop-blur-sm hover:bg-white/6 hover:border-white/20 focus:shadow-xl focus:shadow-purple-500/10"
                     />
                 </div>
                 <div className="flex gap-2.5 flex-wrap">
@@ -156,8 +154,8 @@ export function RepoList({ initialRepos = [] }: RepoListProps) {
                         onClick={() => setFilter("all")}
                         className={`px-5 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 ${
                             filter === "all"
-                                ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/40 scale-105 ring-2 ring-purple-500/30"
-                                : "bg-white/[0.06] text-white/80 hover:bg-white/[0.12] hover:text-white border border-white/10 hover:border-white/25 hover:shadow-md hover:shadow-black/10"
+                                ? "bg-linear-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/40 scale-105 ring-2 ring-purple-500/30"
+                                : "bg-white/6 text-white/80 hover:bg-white/12 hover:text-white border border-white/10 hover:border-white/25 hover:shadow-md hover:shadow-black/10"
                         }`}
                     >
                         All
@@ -166,8 +164,8 @@ export function RepoList({ initialRepos = [] }: RepoListProps) {
                         onClick={() => setFilter("public")}
                         className={`px-5 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 ${
                             filter === "public"
-                                ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/40 scale-105 ring-2 ring-purple-500/30"
-                                : "bg-white/[0.06] text-white/80 hover:bg-white/[0.12] hover:text-white border border-white/10 hover:border-white/25 hover:shadow-md hover:shadow-black/10"
+                                ? "bg-linear-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/40 scale-105 ring-2 ring-purple-500/30"
+                                : "bg-white/6 text-white/80 hover:bg-white/12 hover:text-white border border-white/10 hover:border-white/25 hover:shadow-md hover:shadow-black/10"
                         }`}
                     >
                         Public
@@ -176,8 +174,8 @@ export function RepoList({ initialRepos = [] }: RepoListProps) {
                         onClick={() => setFilter("private")}
                         className={`px-5 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 ${
                             filter === "private"
-                                ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/40 scale-105 ring-2 ring-purple-500/30"
-                                : "bg-white/[0.06] text-white/80 hover:bg-white/[0.12] hover:text-white border border-white/10 hover:border-white/25 hover:shadow-md hover:shadow-black/10"
+                                ? "bg-linear-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/40 scale-105 ring-2 ring-purple-500/30"
+                                : "bg-white/6 text-white/80 hover:bg-white/12 hover:text-white border border-white/10 hover:border-white/25 hover:shadow-md hover:shadow-black/10"
                         }`}
                     >
                         Private
@@ -186,8 +184,8 @@ export function RepoList({ initialRepos = [] }: RepoListProps) {
                         onClick={() => setFilter("tracked")}
                         className={`px-5 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 flex items-center gap-2 ${
                             filter === "tracked"
-                                ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/40 scale-105 ring-2 ring-purple-500/30"
-                                : "bg-white/[0.06] text-white/80 hover:bg-white/[0.12] hover:text-white border border-white/10 hover:border-white/25 hover:shadow-md hover:shadow-black/10"
+                                ? "bg-linear-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/40 scale-105 ring-2 ring-purple-500/30"
+                                : "bg-white/6 text-white/80 hover:bg-white/12 hover:text-white border border-white/10 hover:border-white/25 hover:shadow-md hover:shadow-black/10"
                         }`}
                     >
                         <Filter className="w-4 h-4" />
@@ -198,7 +196,7 @@ export function RepoList({ initialRepos = [] }: RepoListProps) {
 
             {/* Error Message */}
             {error && (
-                <div className="bg-gradient-to-r from-red-500/20 to-orange-500/20 border border-red-500/40 text-red-100 px-6 py-4 rounded-xl backdrop-blur-sm shadow-xl shadow-red-500/20 animate-fade-in">
+                <div className="bg-linear-to-r from-red-500/20 to-orange-500/20 border border-red-500/40 text-red-100 px-6 py-4 rounded-xl backdrop-blur-sm shadow-xl shadow-red-500/20 animate-fade-in">
                     <div className="flex items-center gap-3">
                         <div className="w-2.5 h-2.5 rounded-full bg-red-400 animate-pulse shadow-lg shadow-red-400/50"></div>
                         <span className="font-semibold tracking-wide">{error}</span>
@@ -228,7 +226,7 @@ export function RepoList({ initialRepos = [] }: RepoListProps) {
                     <div className="space-y-4 max-h-[calc(100vh-400px)] overflow-y-auto pr-2 custom-scrollbar">
                 {filteredRepos.length === 0 ? (
                     <div className="text-center py-20">
-                        <div className="inline-flex items-center justify-center w-24 h-24 rounded-2xl bg-gradient-to-br from-white/[0.05] to-white/[0.02] border border-white/10 mb-6 shadow-lg shadow-black/10">
+                        <div className="inline-flex items-center justify-center w-24 h-24 rounded-2xl bg-linear-to-br from-white/5 to-white/2 border border-white/10 mb-6 shadow-lg shadow-black/10">
                             <Code className="w-12 h-12 text-white/40" />
                         </div>
                         <p className="text-xl font-semibold text-white/90 mb-2 tracking-tight">No repositories found</p>
@@ -240,23 +238,23 @@ export function RepoList({ initialRepos = [] }: RepoListProps) {
                         return (
                             <div
                                 key={repo.id}
-                                className="group bg-gradient-to-br from-white/[0.05] to-white/[0.02] border border-white/10 rounded-2xl p-6 hover:bg-gradient-to-br hover:from-white/[0.08] hover:to-white/[0.04] hover:border-purple-500/50 hover:shadow-2xl hover:shadow-purple-500/20 transition-all duration-300 cursor-pointer backdrop-blur-sm animate-fade-in shadow-lg shadow-black/5"
+                                className="group bg-linear-to-br from-white/5 to-white/2 border border-white/10 rounded-2xl p-6 hover:bg-linear-to-br hover:from-white/8 hover:to-white/4 hover:border-purple-500/50 hover:shadow-2xl hover:shadow-purple-500/20 transition-all duration-300 cursor-pointer backdrop-blur-sm animate-fade-in shadow-lg shadow-black/5"
                                 style={{ animationDelay: `${index * 50}ms` }}
                             >
                                 <div className="flex items-start justify-between gap-5">
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-3 mb-3 flex-wrap">
-                                            <h3 className="text-xl font-bold text-white group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-purple-300 group-hover:to-pink-300 transition-all duration-300 truncate">
+                                            <h3 className="text-xl font-bold text-white group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-linear-to-r group-hover:from-purple-300 group-hover:to-pink-300 transition-all duration-300 truncate">
                                                 {repo.name}
                                             </h3>
                                             {repo.private ? (
-                                                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-white/[0.08] border border-white/10 rounded-lg">
+                                                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-white/8 border border-white/10 rounded-lg">
                                                     <Lock className="w-3.5 h-3.5 text-white/50" />
                                                     <span className="text-xs font-medium text-white/60">Private</span>
                                                 </div>
                                             ) : null}
                                             {isTracked && (
-                                                <span className="px-3 py-1 text-xs font-semibold bg-gradient-to-r from-purple-600/40 to-pink-600/40 text-purple-200 rounded-full border border-purple-500/30 backdrop-blur-sm shadow-sm">
+                                                <span className="px-3 py-1 text-xs font-semibold bg-linear-to-r from-purple-600/40 to-pink-600/40 text-purple-200 rounded-full border border-purple-500/30 backdrop-blur-sm shadow-sm">
                                                     Tracking
                                                 </span>
                                             )}
@@ -268,18 +266,18 @@ export function RepoList({ initialRepos = [] }: RepoListProps) {
                                         )}
                                         <div className="flex items-center gap-5 text-sm text-white/50 flex-wrap">
                                             {repo.language && (
-                                                <div className="flex items-center gap-2 px-2.5 py-1 bg-white/[0.05] rounded-lg border border-white/5">
-                                                    <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 shadow-sm"></div>
+                                                <div className="flex items-center gap-2 px-2.5 py-1 bg-white/5 rounded-lg border border-white/5">
+                                                    <div className="w-2.5 h-2.5 rounded-full bg-linear-to-br from-purple-400 to-pink-400 shadow-sm"></div>
                                                     <span className="font-medium">{repo.language}</span>
                                                 </div>
                                             )}
                                             {repo.stargazersCount > 0 && (
-                                                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-white/[0.05] rounded-lg border border-white/5">
+                                                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-white/5 rounded-lg border border-white/5">
                                                     <Star className="w-4 h-4 text-yellow-400/70 fill-yellow-400/20" />
                                                     <span className="font-medium">{repo.stargazersCount.toLocaleString()}</span>
                                                 </div>
                                             )}
-                                            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-white/[0.05] rounded-lg border border-white/5">
+                                            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-white/5 rounded-lg border border-white/5">
                                                 <GitBranch className="w-4 h-4 text-white/50" />
                                                 <span className="font-medium">{repo.defaultBranch}</span>
                                             </div>
@@ -293,8 +291,8 @@ export function RepoList({ initialRepos = [] }: RepoListProps) {
                                         disabled={loading}
                                         className={`px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-200 shrink-0 ${
                                             isTracked
-                                                ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-500 hover:to-pink-500 shadow-lg shadow-purple-500/50 hover:shadow-xl hover:shadow-purple-500/60 hover:scale-105 active:scale-95 ring-2 ring-purple-500/30"
-                                                : "bg-white/[0.08] text-white/80 hover:bg-white/[0.15] hover:text-white border border-white/20 hover:border-white/35 hover:shadow-md hover:shadow-black/10 hover:scale-105 active:scale-95"
+                                                ? "bg-linear-to-r from-purple-600 to-pink-600 text-white hover:from-purple-500 hover:to-pink-500 shadow-lg shadow-purple-500/50 hover:shadow-xl hover:shadow-purple-500/60 hover:scale-105 active:scale-95 ring-2 ring-purple-500/30"
+                                                : "bg-white/8 text-white/80 hover:bg-white/15 hover:text-white border border-white/20 hover:border-white/35 hover:shadow-md hover:shadow-black/10 hover:scale-105 active:scale-95"
                                         } disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100`}
                                     >
                                         {isTracked ? (
