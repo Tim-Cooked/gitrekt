@@ -42,6 +42,23 @@ export async function POST(req: NextRequest) {
 
         if (!diff) {
             console.log("No diff found, passing by default");
+            
+            // Track successful judgment for commits with no diff
+            await prisma.event.create({
+                data: {
+                    repoName: repo,
+                    actor: commitInfo.author,
+                    commitMessage: commitInfo.message,
+                    commitSha: sha,
+                    commitDate: commitInfo.date ? new Date(commitInfo.date) : null,
+                    diffSummary: null,
+                    roast: `✅ Code passed judgment: No changes to judge`,
+                    failReason: null,
+                    deadline: null,
+                    fixed: true,
+                },
+            });
+            
             return NextResponse.json({
                 verdict: "pass",
                 message: "No changes to judge",
@@ -52,7 +69,11 @@ export async function POST(req: NextRequest) {
         const diffLines = diff.split('\n');
         const changedFiles = diffLines
             .filter(line => line.startsWith('diff --git'))
-            .map(line => line.split(' b/')[1]);
+            .map(line => {
+                const parts = line.split(' b/');
+                return parts.length > 1 ? parts[1] : null;
+            })
+            .filter((file): file is string => file !== null);
         
         const onlyGitRektChanges = changedFiles.length > 0 && 
             changedFiles.every(file => file === '.github/workflows/gitrekt.yml');
@@ -69,6 +90,23 @@ export async function POST(req: NextRequest) {
 
         if (judgment.pass) {
             console.log(`✅ Code passed: ${judgment.reason}`);
+            
+            // Track successful judgment in database
+            await prisma.event.create({
+                data: {
+                    repoName: repo,
+                    actor: commitInfo.author,
+                    commitMessage: commitInfo.message,
+                    commitSha: sha,
+                    commitDate: commitInfo.date ? new Date(commitInfo.date) : null,
+                    diffSummary: diff.substring(0, 5000),
+                    roast: `✅ Code passed judgment: ${judgment.reason}`,
+                    failReason: null,
+                    deadline: null,
+                    fixed: true, // Mark as fixed/passed
+                },
+            });
+            
             return NextResponse.json({
                 verdict: "pass",
                 message: judgment.reason,
@@ -101,10 +139,12 @@ export async function POST(req: NextRequest) {
                 actor: commitInfo.author,
                 commitMessage: commitInfo.message,
                 commitSha: sha,
+                commitDate: commitInfo.date ? new Date(commitInfo.date) : null,
                 diffSummary: diff.substring(0, 5000),
                 roast,
                 failReason: judgment.reason,
                 deadline: deadline,
+                fixed: false, // Explicitly mark as failed (not fixed)
             },
         });
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { deleteRepository, revertToLastCommit } from "@/lib/github";
+import { generateLinkedInPost } from "@/lib/llm";
 
 export async function GET(req: NextRequest) {
     // Verify cron secret to prevent unauthorized access
@@ -48,7 +49,91 @@ export async function GET(req: NextRequest) {
 
             const actions: string[] = [];
 
-            // Mark the roast as posted FIRST (before any deletions)
+            // Debug: Log LinkedIn posting status
+            console.log(`🔍 LinkedIn posting check for ${roast.repoName}: postToLinkedIn=${repo.postToLinkedIn}, hasToken=${!!repo.linkedInToken}`);
+
+            // Handle LinkedIn posting FIRST (before any deletions/reverts)
+            if (repo.postToLinkedIn && repo.linkedInToken) {
+                try {
+                    console.log(`📱 LINKEDIN POST: Generating post for ${roast.repoName}`);
+                    
+                    // Generate LinkedIn post using Gemini
+                    const linkedInPostText = await generateLinkedInPost(
+                        roast.actor,
+                        roast.repoName,
+                        roast.commitMessage,
+                        roast.failReason || "Code quality issues",
+                        roast.roast
+                    );
+
+                    // Get LinkedIn user profile to get person URN
+                    const profileResponse = await fetch("https://api.linkedin.com/v2/me", {
+                        headers: {
+                            Authorization: `Bearer ${repo.linkedInToken}`,
+                            "X-Restli-Protocol-Version": "2.0.0",
+                        },
+                    });
+
+                    if (!profileResponse.ok) {
+                        throw new Error(`Failed to fetch LinkedIn profile: ${profileResponse.status}`);
+                    }
+
+                    const profileData = await profileResponse.json();
+                    // Extract numeric ID from response
+                    // LinkedIn /v2/me returns either a numeric ID or URN format
+                    let personId = profileData.id;
+                    if (typeof personId === "string") {
+                        // If it's already a URN, extract the ID part
+                        if (personId.startsWith("urn:li:person:")) {
+                            personId = personId.replace("urn:li:person:", "");
+                        }
+                    }
+                    const personUrn = `urn:li:person:${personId}`;
+                    console.log(`📱 LinkedIn person URN: ${personUrn}`);
+
+                    // Post to LinkedIn
+                    const postResponse = await fetch("https://api.linkedin.com/v2/ugcPosts", {
+                        method: "POST",
+                        headers: {
+                            Authorization: `Bearer ${repo.linkedInToken}`,
+                            "X-Restli-Protocol-Version": "2.0.0",
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                            author: personUrn,
+                            lifecycleState: "PUBLISHED",
+                            specificContent: {
+                                "com.linkedin.ugc.ShareContent": {
+                                    shareCommentary: {
+                                        text: linkedInPostText,
+                                    },
+                                    shareMediaCategory: "NONE",
+                                },
+                            },
+                            visibility: {
+                                "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC",
+                            },
+                        }),
+                    });
+
+                    if (!postResponse.ok) {
+                        const errorText = await postResponse.text();
+                        console.error(`❌ LinkedIn post failed: ${postResponse.status}`, errorText);
+                        throw new Error(`LinkedIn API error: ${postResponse.status} - ${errorText}`);
+                    }
+                    
+                    const postResult = await postResponse.json().catch(() => ({}));
+                    console.log(`✅ LinkedIn post created:`, postResult);
+
+                    actions.push("linkedin_posted");
+                    console.log(`✅ LINKEDIN POST: Successfully posted to LinkedIn for ${roast.repoName}`);
+                } catch (error) {
+                    console.error(`❌ Failed to post to LinkedIn for ${roast.repoName}:`, error);
+                    actions.push("linkedin_post_failed");
+                }
+            }
+
+            // Mark the roast as posted (after LinkedIn posting, before deletions)
             await prisma.event.update({
                 where: { id: roast.id },
                 data: { posted: true },
@@ -86,9 +171,6 @@ export async function GET(req: NextRequest) {
                     console.error(`❌ Failed to delete repo ${repo.repoName}:`, error);
                     actions.push("repo_deletion_failed");
                 }
-            } else if (!repo.revertCommit) {
-                actions.push("no_punishment_mode");
-                // TODO: Add social media posting here in the future
             }
 
             results.push({
