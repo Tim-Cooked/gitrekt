@@ -27,6 +27,11 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
         LinkedIn({
             clientId: process.env.LINKEDIN_CLIENT_ID,
             clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
+            authorization: {
+                params: {
+                    scope: "openid profile email w_member_social",
+                },
+            },
         }),
     ],
     callbacks: {
@@ -119,7 +124,8 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
                 token.linkedinAccountLinked = true;
             }
 
-            if (!token.accessToken && token.userId) {
+            // Restore GitHub token from DB if missing
+            if ((!token.accessToken || !token.githubAccessToken) && token.userId) {
                 const githubAccount = await prisma.account.findFirst({
                     where: {
                         userId: token.userId as string,
@@ -129,34 +135,35 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
                 if (githubAccount?.access_token) {
                     token.accessToken = githubAccount.access_token;
                     token.githubAccessToken = githubAccount.access_token;
+                    console.log("✅ Restored GitHub token from database");
                 }
             }
 
-            if (token.userId) {
-                if (!token.xAccountLinked) {
-                    const twitterAccount = await prisma.account.findFirst({
-                        where: {
-                            userId: token.userId as string,
-                            provider: "twitter",
-                        },
-                    });
-                    if (twitterAccount) {
-                        token.xAccountLinked = true;
-                        token.xAccessToken = twitterAccount.access_token;
-                    }
+            // Restore Twitter token status from database if not set
+            if (!token.xAccountLinked && token.userId) {
+                const twitterAccount = await prisma.account.findFirst({
+                    where: {
+                        userId: token.userId as string,
+                        provider: "twitter",
+                    },
+                });
+                if (twitterAccount) {
+                    token.xAccountLinked = true;
+                    token.xAccessToken = twitterAccount.access_token;
                 }
+            }
 
-                if (!token.linkedinAccountLinked) {
-                    const linkedinAccount = await prisma.account.findFirst({
-                        where: {
-                            userId: token.userId as string,
-                            provider: "linkedin",
-                        },
-                    });
-                    if (linkedinAccount) {
-                        token.linkedinAccountLinked = true;
-                        token.linkedinAccessToken = linkedinAccount.access_token;
-                    }
+            // Restore LinkedIn token status from database if not set
+            if (!token.linkedinAccountLinked && token.userId) {
+                const linkedinAccount = await prisma.account.findFirst({
+                    where: {
+                        userId: token.userId as string,
+                        provider: "linkedin",
+                    },
+                });
+                if (linkedinAccount) {
+                    token.linkedinAccountLinked = true;
+                    token.linkedinAccessToken = linkedinAccount.access_token;
                 }
             }
 

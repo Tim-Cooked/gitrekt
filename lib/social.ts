@@ -289,52 +289,6 @@ export async function postToLinkedIn(
 /**
  * Post roast to all configured social platforms
  */
-// export async function postRoastToSocial(
-//     repoName: string,
-//     roastMessage: string,
-//     postToTwitterEnabled: boolean,
-//     postToLinkedInEnabled: boolean
-// ): Promise<PostResult[]> {
-//     const results: PostResult[] = [];
-
-//     // Find the user who owns this repo
-//     const trackedRepo = await prisma.trackedRepo.findUnique({
-//         where: { repoName },
-//     });
-
-//     if (!trackedRepo) {
-//         console.error(`No tracked repo found for ${repoName}`);
-//         return results;
-//     }
-
-//     // Find the user by matching the access token to an account
-//     const account = await prisma.account.findFirst({
-//         where: {
-//             provider: "github",
-//             access_token: trackedRepo.accessToken,
-//         },
-//     });
-
-//     if (!account) {
-//         console.error(`No user found for repo ${repoName}`);
-//         return results;
-//     }
-
-//     const userId = account.userId;
-
-//     if (postToTwitterEnabled) {
-//         const twitterResult = await postToTwitter(userId, roastMessage);
-//         results.push(twitterResult);
-//     }
-
-//     if (postToLinkedInEnabled) {
-//         const linkedinResult = await postToLinkedIn(userId, roastMessage);
-//         results.push(linkedinResult);
-//     }
-
-//     return results;
-// }
-
 export async function postRoastToSocial(
     repoName: string,
     roastText: string,
@@ -349,53 +303,162 @@ export async function postRoastToSocial(
         select: { userId: true },
     });
 
+    console.log(`🔍 TrackedRepo for ${repoName}:`, trackedRepo);
+
     if (!trackedRepo?.userId) {
         console.error(`No userId found for repo ${repoName}`);
         return [{ platform: "all", success: false, error: "No user associated with repo" }];
     }
 
-    // Find the user's social tokens using their GitHub ID
-    // @ts-expect-error - Prisma generates userSession from UserSession model
-    const userSession = await prisma.userSession.findUnique({
-        where: { githubId: trackedRepo.userId },
-    });
+    // Find the user's Twitter account from NextAuth Account table
+    if (postToTwitter) {
+        const twitterAccount = await prisma.account.findFirst({
+            where: {
+                userId: trackedRepo.userId,
+                provider: "twitter",
+            },
+        });
 
-    if (!userSession) {
-        console.error(`No user session found for userId ${trackedRepo.userId}`);
-        return [{ platform: "all", success: false, error: "User session not found" }];
+        console.log(`🐦 Twitter account for user ${trackedRepo.userId}:`, !!twitterAccount);
+
+        if (twitterAccount?.access_token) {
+            try {
+                // Check if token needs refresh
+                let accessToken = twitterAccount.access_token;
+                
+                if (twitterAccount.refresh_token && twitterAccount.expires_at) {
+                    const expiresAt = new Date(twitterAccount.expires_at * 1000);
+                    if (expiresAt < new Date()) {
+                        console.log("🔄 Twitter token expired, refreshing...");
+                        const refreshed = await refreshTwitterToken(twitterAccount.refresh_token);
+                        if (refreshed) {
+                            accessToken = refreshed.access_token;
+                            // Update the stored token
+                            await prisma.account.update({
+                                where: { id: twitterAccount.id },
+                                data: {
+                                    access_token: refreshed.access_token,
+                                    refresh_token: refreshed.refresh_token || twitterAccount.refresh_token,
+                                    expires_at: refreshed.expires_at,
+                                },
+                            });
+                        }
+                    }
+                }
+
+                const result = await postToTwitterAPI(roastText, accessToken);
+                results.push(result);
+            } catch (error) {
+                console.error("Twitter posting error:", error);
+                results.push({
+                    platform: "twitter",
+                    success: false,
+                    error: error instanceof Error ? error.message : "Unknown error",
+                });
+            }
+        } else {
+            results.push({ platform: "twitter", success: false, error: "No Twitter token found for user" });
+        }
     }
 
-    // Post to Twitter if enabled and token exists
-    if (postToTwitter && userSession.twitterToken) {
-        try {
-            const result = await postToTwitter(roastText, userSession.twitterToken, userSession.twitterSecret);
-            results.push(result);
-        } catch (error) {
-            results.push({ 
-                platform: "twitter", 
-                success: false, 
-                error: error instanceof Error ? error.message : "Unknown error" 
-            });
-        }
-    } else if (postToTwitter) {
-        results.push({ platform: "twitter", success: false, error: "No Twitter token found" });
-    }
+    // Find the user's LinkedIn account from NextAuth Account table
+    if (postToLinkedIn) {
+        const linkedinAccount = await prisma.account.findFirst({
+            where: {
+                userId: trackedRepo.userId,
+                provider: "linkedin",
+            },
+        });
 
-    // Post to LinkedIn if enabled and token exists
-    if (postToLinkedIn && userSession.linkedInToken) {
-        try {
-            const result = await postToLinkedInAPI(roastText, userSession.linkedInToken);
-            results.push(result);
-        } catch (error) {
-            results.push({ 
-                platform: "linkedin", 
-                success: false, 
-                error: error instanceof Error ? error.message : "Unknown error" 
-            });
+        console.log(`💼 LinkedIn account for user ${trackedRepo.userId}:`, !!linkedinAccount);
+
+        if (linkedinAccount?.access_token) {
+            try {
+                const result = await postToLinkedInAPI(roastText, linkedinAccount.access_token);
+                results.push(result);
+            } catch (error) {
+                console.error("LinkedIn posting error:", error);
+                results.push({
+                    platform: "linkedin",
+                    success: false,
+                    error: error instanceof Error ? error.message : "Unknown error",
+                });
+            }
+        } else {
+            results.push({ platform: "linkedin", success: false, error: "No LinkedIn token found for user" });
         }
-    } else if (postToLinkedIn) {
-        results.push({ platform: "linkedin", success: false, error: "No LinkedIn token found" });
     }
 
     return results;
+}
+
+// Helper function to post to Twitter API v2
+async function postToTwitterAPI(
+    text: string,
+    accessToken: string
+): Promise<{ platform: string; success: boolean; postId?: string; error?: string }> {
+    const response = await fetch("https://api.twitter.com/2/tweets", {
+        method: "POST",
+        headers: {
+            "Authorization": `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ text }),
+    });
+
+    if (!response.ok) {
+        const error = await response.text();
+        console.error("Twitter API error:", error);
+        return { platform: "twitter", success: false, error: `Twitter API error: ${response.status}` };
+    }
+
+    const data = await response.json();
+    return { platform: "twitter", success: true, postId: data.data?.id };
+}
+
+// Helper function to post to LinkedIn API
+async function postToLinkedInAPI(
+    text: string,
+    accessToken: string
+): Promise<{ platform: string; success: boolean; postId?: string; error?: string }> {
+    // First get the user's LinkedIn ID
+    const meResponse = await fetch("https://api.linkedin.com/v2/userinfo", {
+        headers: { "Authorization": `Bearer ${accessToken}` },
+    });
+
+    if (!meResponse.ok) {
+        return { platform: "linkedin", success: false, error: "Failed to get LinkedIn user info" };
+    }
+
+    const me = await meResponse.json();
+    const authorUrn = `urn:li:person:${me.sub}`;
+
+    const response = await fetch("https://api.linkedin.com/v2/ugcPosts", {
+        method: "POST",
+        headers: {
+            "Authorization": `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+            "X-Restli-Protocol-Version": "2.0.0",
+        },
+        body: JSON.stringify({
+            author: authorUrn,
+            lifecycleState: "PUBLISHED",
+            specificContent: {
+                "com.linkedin.ugc.ShareContent": {
+                    shareCommentary: { text },
+                    shareMediaCategory: "NONE",
+                },
+            },
+            visibility: { "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC" },
+        }),
+    });
+
+    if (!response.ok) {
+        const error = await response.text();
+        console.error("LinkedIn API error:", error);
+        return { platform: "linkedin", success: false, error: `LinkedIn API error: ${response.status}` };
+    }
+
+    const data = await response.json();
+    return { platform: "linkedin", success: true, postId: data.id };
 }
