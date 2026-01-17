@@ -17,8 +17,22 @@ model TrackedRepo {
   id          String   @id @default(cuid())
   repoName    String   @unique
   accessToken String
+  
+  // Punishment settings
+  postToLinkedIn  Boolean @default(false)
+  postToTwitter   Boolean @default(false)
+  yoloMode        Boolean @default(false)  // Delete repo on failure
+  timerMinutes    Int     @default(30)      // Time to fix before posting
+  
+  // Social media credentials (encrypted in production)
+  linkedInToken   String?
+  twitterToken    String?
+  twitterSecret   String?
+  
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  
+  events      Event[]
 }
 
 model Event {
@@ -30,6 +44,12 @@ model Event {
   diffSummary   String?
   roast         String
   failReason    String?
+  
+  // Timer for social posting
+  deadline      DateTime?  // When the roast will be posted if not fixed
+  posted        Boolean    @default(false)  // Whether it was posted to social
+  fixed         Boolean    @default(false)  // Whether the user fixed it in time
+  
   createdAt     DateTime @default(now())
 }
 

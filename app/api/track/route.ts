@@ -119,6 +119,13 @@ async function createOrUpdateWorkflow(
     console.log("Workflow installed successfully.");
 }
 
+interface TrackingConfig {
+    postToLinkedIn?: boolean;
+    postToTwitter?: boolean;
+    yoloMode?: boolean;
+    timerMinutes?: number;
+}
+
 export async function POST(request: Request) {
     const session = await auth();
 
@@ -128,7 +135,11 @@ export async function POST(request: Request) {
     }
 
     try {
-        const { repoFullName, tracked } = await request.json();
+        const { repoFullName, tracked, config } = await request.json() as {
+            repoFullName: string;
+            tracked: boolean;
+            config?: TrackingConfig;
+        };
 
         if (!repoFullName || typeof tracked !== "boolean") {
             return NextResponse.json(
@@ -148,13 +159,23 @@ export async function POST(request: Request) {
             }
 
             try {
-                // Store in database
+                // Store in database with config
                 await prisma.trackedRepo.upsert({
                     where: { repoName: repoFullName },
-                    update: { accessToken: accessToken },
+                    update: { 
+                        accessToken: accessToken,
+                        postToLinkedIn: config?.postToLinkedIn ?? false,
+                        postToTwitter: config?.postToTwitter ?? false,
+                        yoloMode: config?.yoloMode ?? false,
+                        timerMinutes: config?.timerMinutes ?? 30,
+                    },
                     create: { 
                         repoName: repoFullName, 
-                        accessToken: accessToken 
+                        accessToken: accessToken,
+                        postToLinkedIn: config?.postToLinkedIn ?? false,
+                        postToTwitter: config?.postToTwitter ?? false,
+                        yoloMode: config?.yoloMode ?? false,
+                        timerMinutes: config?.timerMinutes ?? 30,
                     },
                 });
             } catch (error) {
