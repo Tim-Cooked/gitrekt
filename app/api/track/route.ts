@@ -1,38 +1,12 @@
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { createWebhook } from "@/lib/github";
+import { createWebhook, getDefaultBranch, isRepoEmpty } from "@/lib/github";
 
 async function installWatchdog(repoName: string, accessToken: string) {
-    // Get the default branch
-    let defaultBranch = "main";
-    try {
-        const repoRes = await fetch(`https://api.github.com/repos/${repoName}`, {
-            headers: { Authorization: `Bearer ${accessToken}` }
-        });
-        if (repoRes.ok) {
-            const repoData = await repoRes.json();
-            defaultBranch = repoData.default_branch || "main";
-        }
-    } catch (e) {
-        console.error("Failed to fetch default branch", e);
-    }
+    const defaultBranch = await getDefaultBranch(repoName, accessToken);
+    const repoEmpty = await isRepoEmpty(repoName, accessToken, defaultBranch);
 
-    // Check if repo is empty
-    let isRepoEmpty = false;
-    try {
-        const treesRes = await fetch(
-            `https://api.github.com/repos/${repoName}/git/trees/${defaultBranch}?recursive=0`,
-            { headers: { Authorization: `Bearer ${accessToken}` } }
-        );
-        if (treesRes.status === 409) {
-            isRepoEmpty = true;
-        }
-    } catch (e) {
-        console.error("Failed to fetch file tree", e);
-    }
-
-    // Define the workflow
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
     const workflowContent = `name: GitRekt Judge
@@ -63,37 +37,53 @@ jobs:
 `;
 
     // Initialize repo if empty
-    if (isRepoEmpty) {
-        const readmeRes = await fetch(
-            `https://api.github.com/repos/${repoName}/contents/README.md`,
-            {
-                method: "PUT",
-                headers: {
-                    Authorization: `Bearer ${accessToken}`,
-                    Accept: "application/vnd.github+json",
-                },
-                body: JSON.stringify({
-                    message: "Initialize GitRekt Repository",
-                    content: Buffer.from("# GitRekt Tracked Repo\n\nThis repository is being watched.").toString("base64"),
-                }),
-            }
-        );
-
-        if (!readmeRes.ok) {
-            console.error("Failed to create README:", await readmeRes.text());
-        }
-        await new Promise(r => setTimeout(r, 2000));
+    if (repoEmpty) {
+        await initializeEmptyRepo(repoName, accessToken);
     }
 
-    // Check if workflow already exists (to get SHA for update)
-    const fileUrl = `https://api.github.com/repos/${repoName}/contents/.github/workflows/gitrekt.yml`;
-    let sha: string | undefined;
+    await createOrUpdateWorkflow(repoName, accessToken, workflowContent, defaultBranch, repoEmpty);
+}
 
+async function initializeEmptyRepo(repoName: string, accessToken: string) {
+    const response = await fetch(
+        `https://api.github.com/repos/${repoName}/contents/README.md`,
+        {
+            method: "PUT",
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+                Accept: "application/vnd.github+json",
+            },
+            body: JSON.stringify({
+                message: "Initialize GitRekt Repository",
+                content: Buffer.from("# GitRekt Tracked Repo\n\nThis repository is being watched.").toString("base64"),
+            }),
+        }
+    );
+
+    if (!response.ok) {
+        console.error("Failed to create README:", await response.text());
+    }
+
+    // Wait for GitHub to process
+    await new Promise((r) => setTimeout(r, 2000));
+}
+
+async function createOrUpdateWorkflow(
+    repoName: string,
+    accessToken: string,
+    content: string,
+    defaultBranch: string,
+    isRepoEmpty: boolean
+) {
+    const fileUrl = `https://api.github.com/repos/${repoName}/contents/.github/workflows/gitrekt.yml`;
+
+    // Check if workflow exists to get SHA for update
+    let sha: string | undefined;
     const existingRes = await fetch(fileUrl, {
         headers: {
             Authorization: `Bearer ${accessToken}`,
-            Accept: "application/vnd.github+json"
-        }
+            Accept: "application/vnd.github+json",
+        },
     });
 
     if (existingRes.ok) {
@@ -101,15 +91,14 @@ jobs:
         sha = data.sha;
     }
 
-    // Create or update workflow file
-    const putBody: Record<string, string | undefined> = {
+    const body: Record<string, string | undefined> = {
         message: sha ? "Update GitRekt workflow" : "Setup GitRekt workflow",
-        content: Buffer.from(workflowContent).toString("base64"),
-        sha: sha,
+        content: Buffer.from(content).toString("base64"),
+        sha,
     };
 
     if (!isRepoEmpty) {
-        putBody.branch = defaultBranch;
+        body.branch = defaultBranch;
     }
 
     const response = await fetch(fileUrl, {
@@ -118,7 +107,7 @@ jobs:
             Authorization: `Bearer ${accessToken}`,
             Accept: "application/vnd.github+json",
         },
-        body: JSON.stringify(putBody),
+        body: JSON.stringify(body),
     });
 
     if (!response.ok) {
@@ -132,7 +121,7 @@ jobs:
 
 export async function POST(request: Request) {
     const session = await auth();
-    
+
     const accessToken = (session as { accessToken?: string })?.accessToken;
     if (!accessToken) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -183,16 +172,12 @@ export async function POST(request: Request) {
                 throw new Error(`Workflow installation failed: ${errorMsg}`);
             }
         } else {
-            // Remove from database
-            await prisma.trackedRepo.delete({
-                where: { repoName: repoFullName },
-            }).catch(() => {});
+            await prisma.trackedRepo
+                .delete({ where: { repoName: repoFullName } })
+                .catch(() => {});
         }
 
-        return NextResponse.json({ 
-            success: true,
-            tracked 
-        });
+        return NextResponse.json({ success: true, tracked });
     } catch (error) {
         console.error("Error updating tracking:", error);
         const errorMessage = error instanceof Error ? error.message : "Failed to update tracking";
