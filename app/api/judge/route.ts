@@ -88,7 +88,12 @@ export async function POST(req: NextRequest) {
 
         // Calculate deadline based on repo settings
         const deadline = new Date();
-        deadline.setMinutes(deadline.getMinutes() + trackedRepo.timerMinutes);
+        // For dev: 0 minutes = 10 seconds
+        if (trackedRepo.timerMinutes === 0) {
+            deadline.setSeconds(deadline.getSeconds() + 10);
+        } else {
+            deadline.setMinutes(deadline.getMinutes() + trackedRepo.timerMinutes);
+        }
 
         await prisma.event.create({
             data: {

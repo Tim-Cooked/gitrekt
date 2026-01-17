@@ -123,6 +123,7 @@ interface TrackingConfig {
     postToLinkedIn?: boolean;
     postToTwitter?: boolean;
     yoloMode?: boolean;
+    revertCommit?: boolean;
     timerMinutes?: number;
 }
 
@@ -151,6 +152,7 @@ export async function GET(request: Request) {
                 postToLinkedIn: true,
                 postToTwitter: true,
                 yoloMode: true,
+                revertCommit: true,
                 timerMinutes: true,
             },
         });
@@ -161,6 +163,7 @@ export async function GET(request: Request) {
                     postToLinkedIn: false,
                     postToTwitter: false,
                     yoloMode: false,
+                    revertCommit: false,
                     timerMinutes: 30,
                 },
             });
@@ -171,6 +174,7 @@ export async function GET(request: Request) {
                 postToLinkedIn: trackedRepo.postToLinkedIn,
                 postToTwitter: trackedRepo.postToTwitter,
                 yoloMode: trackedRepo.yoloMode,
+                revertCommit: trackedRepo.revertCommit,
                 timerMinutes: trackedRepo.timerMinutes,
             },
         });
@@ -224,6 +228,7 @@ export async function POST(request: Request) {
                         postToLinkedIn: config?.postToLinkedIn ?? false,
                         postToTwitter: config?.postToTwitter ?? false,
                         yoloMode: config?.yoloMode ?? false,
+                        revertCommit: config?.revertCommit ?? false,
                         timerMinutes: config?.timerMinutes ?? 30,
                     },
                     create: { 
@@ -232,6 +237,7 @@ export async function POST(request: Request) {
                         postToLinkedIn: config?.postToLinkedIn ?? false,
                         postToTwitter: config?.postToTwitter ?? false,
                         yoloMode: config?.yoloMode ?? false,
+                        revertCommit: config?.revertCommit ?? false,
                         timerMinutes: config?.timerMinutes ?? 30,
                     },
                 });

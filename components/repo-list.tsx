@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Filter, GitBranch, Lock, Star, Code, Loader2, Skull } from "lucide-react";
+import { Search, Filter, GitBranch, Lock, Star, Code, Loader2, Skull, RotateCcw } from "lucide-react";
 import { LinkedInIcon, TwitterIcon } from "@/components/brand-icons";
 
 interface Repo {
@@ -30,7 +30,7 @@ export function RepoList({ initialRepos = [] }: RepoListProps) {
     const [searchQuery, setSearchQuery] = useState("");
     const [filter, setFilter] = useState<FilterType>("all");
     const [trackedRepos, setTrackedRepos] = useState<Set<number>>(new Set());
-    const [trackedRepoConfigs, setTrackedRepoConfigs] = useState<Record<string, { postToLinkedIn: boolean; postToTwitter: boolean; yoloMode: boolean }>>({});
+    const [trackedRepoConfigs, setTrackedRepoConfigs] = useState<Record<string, { postToLinkedIn: boolean; postToTwitter: boolean; yoloMode: boolean; revertCommit: boolean }>>({});
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [showUntrackModal, setShowUntrackModal] = useState(false);
@@ -348,19 +348,40 @@ export function RepoList({ initialRepos = [] }: RepoListProps) {
                                     {/* Tracking Settings Icons */}
                                     {isTracked && trackedRepoConfigs[repo.fullName] && (
                                         <div className="flex items-center gap-2 shrink-0">
-                                            {trackedRepoConfigs[repo.fullName].postToLinkedIn && (
+                                            {trackedRepoConfigs[repo.fullName].postToLinkedIn ? (
                                                 <div className="p-2 bg-blue-600/20 border border-blue-500/30 rounded-lg" title="LinkedIn posting enabled">
                                                     <LinkedInIcon className="w-5 h-5 text-blue-400" />
                                                 </div>
+                                            ) : (
+                                                <div className="p-2 bg-white/5 border border-white/10 rounded-lg opacity-40" title="LinkedIn posting disabled">
+                                                    <LinkedInIcon className="w-5 h-5 text-white/30" />
+                                                </div>
                                             )}
-                                            {trackedRepoConfigs[repo.fullName].postToTwitter && (
+                                            {trackedRepoConfigs[repo.fullName].postToTwitter ? (
                                                 <div className="p-2 bg-gray-600/20 border border-gray-500/30 rounded-lg" title="X (Twitter) posting enabled">
                                                     <TwitterIcon className="w-5 h-5 text-gray-400" />
                                                 </div>
+                                            ) : (
+                                                <div className="p-2 bg-white/5 border border-white/10 rounded-lg opacity-40" title="X (Twitter) posting disabled">
+                                                    <TwitterIcon className="w-5 h-5 text-white/30" />
+                                                </div>
                                             )}
-                                            {trackedRepoConfigs[repo.fullName].yoloMode && (
+                                            {trackedRepoConfigs[repo.fullName].yoloMode ? (
                                                 <div className="p-2 bg-red-600/20 border border-red-500/30 rounded-lg" title="Hardcore mode enabled">
                                                     <Skull className="w-5 h-5 text-red-400" />
+                                                </div>
+                                            ) : (
+                                                <div className="p-2 bg-white/5 border border-white/10 rounded-lg opacity-40" title="Hardcore mode disabled">
+                                                    <Skull className="w-5 h-5 text-white/30" />
+                                                </div>
+                                            )}
+                                            {trackedRepoConfigs[repo.fullName].revertCommit ? (
+                                                <div className="p-2 bg-orange-600/20 border border-orange-500/30 rounded-lg" title="Revert commit enabled">
+                                                    <RotateCcw className="w-5 h-5 text-orange-400" />
+                                                </div>
+                                            ) : (
+                                                <div className="p-2 bg-white/5 border border-white/10 rounded-lg opacity-40" title="Revert commit disabled">
+                                                    <RotateCcw className="w-5 h-5 text-white/30" />
                                                 </div>
                                             )}
                                         </div>

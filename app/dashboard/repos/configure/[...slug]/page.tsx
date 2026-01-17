@@ -2,12 +2,13 @@
 
 import { useState, use, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Linkedin, Twitter, Skull, Clock, Shield, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Linkedin, Twitter, Skull, Clock, Shield, AlertTriangle, RotateCcw } from "lucide-react";
 
 interface ConfigFormData {
     postToLinkedIn: boolean;
     postToTwitter: boolean;
     yoloMode: boolean;
+    revertCommit: boolean;
     timerMinutes: number;
 }
 
@@ -21,6 +22,7 @@ export default function ConfigureTrackingPage({ params }: { params: Promise<{ sl
         postToLinkedIn: false,
         postToTwitter: false,
         yoloMode: false,
+        revertCommit: false,
         timerMinutes: 30,
     });
     const [loading, setLoading] = useState(false);
@@ -42,6 +44,7 @@ export default function ConfigureTrackingPage({ params }: { params: Promise<{ sl
                             postToLinkedIn: data.config.postToLinkedIn ?? false,
                             postToTwitter: data.config.postToTwitter ?? false,
                             yoloMode: data.config.yoloMode ?? false,
+                            revertCommit: data.config.revertCommit ?? false,
                             timerMinutes: data.config.timerMinutes ?? 30,
                         });
                     }
@@ -92,6 +95,7 @@ export default function ConfigureTrackingPage({ params }: { params: Promise<{ sl
     };
 
     const timerOptions = [
+        { value: 0, label: "10 seconds (dev)" }, // 0 = 10 seconds for dev purposes
         { value: 5, label: "5 minutes" },
         { value: 10, label: "10 minutes" },
         { value: 15, label: "15 minutes" },
@@ -285,6 +289,39 @@ export default function ConfigureTrackingPage({ params }: { params: Promise<{ sl
                                 </p>
                             </div>
                         )}
+                    </div>
+
+                    {/* Revert Commit */}
+                    <div className={`border rounded-xl p-6 transition-all ${
+                        config.revertCommit 
+                            ? "bg-orange-500/20 border-orange-500/50" 
+                            : "bg-white/5 border-white/10"
+                    }`}>
+                        <button
+                            onClick={() => setConfig({ ...config, revertCommit: !config.revertCommit })}
+                            className="w-full flex items-center gap-4"
+                        >
+                            <div className={`p-2 rounded-lg ${config.revertCommit ? "bg-orange-600" : "bg-white/10"}`}>
+                                <RotateCcw className="w-5 h-5 text-white" />
+                            </div>
+                            <div className="flex-1 text-left">
+                                <p className="text-white font-semibold">↩️ Revert Commit</p>
+                                <p className="text-white/60 text-sm">
+                                    Automatically revert to the previous successful commit when code fails
+                                </p>
+                            </div>
+                            <div className={`w-5 h-5 rounded-full border-2 transition-all ${
+                                config.revertCommit 
+                                    ? "bg-orange-500 border-orange-500" 
+                                    : "border-white/30"
+                            }`}>
+                                {config.revertCommit && (
+                                    <svg className="w-full h-full text-white" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                )}
+                            </div>
+                        </button>
                     </div>
 
                     {/* Error Message */}
