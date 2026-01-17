@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
 interface GitHubRepo {
     id: number;
@@ -31,10 +32,24 @@ export async function GET() {
         });
 
         if (!reposResponse.ok) {
-            throw new Error("Failed to fetch repos");
+            const errorText = await reposResponse.text().catch(() => "Unknown error");
+            console.error(`GitHub API error: ${reposResponse.status} - ${errorText}`);
+            throw new Error(`GitHub API error: ${reposResponse.status} - ${errorText}`);
         }
 
         const repos: GitHubRepo[] = await reposResponse.json();
+
+        // Fetch tracked repos from database
+        let trackedRepoSet = new Set<string>();
+        try {
+            const trackedRepos: Array<{ repoName: string }> = await prisma.trackedRepo.findMany({
+                select: { repoName: true },
+            });
+            trackedRepoSet = new Set<string>(trackedRepos.map((tr) => tr.repoName));
+        } catch (dbError) {
+            console.error("Error fetching tracked repos from database:", dbError);
+            // Continue without tracked repos if DB query fails
+        }
 
         // Transform repos to include only needed data
         const formattedRepos = repos.map((repo) => ({
@@ -49,11 +64,15 @@ export async function GET() {
             defaultBranch: repo.default_branch,
         }));
 
-        return NextResponse.json({ repos: formattedRepos });
+        return NextResponse.json({ 
+            repos: formattedRepos,
+            trackedRepos: Array.from(trackedRepoSet)
+        });
     } catch (error) {
         console.error("Error fetching repos:", error);
+        const errorMessage = error instanceof Error ? error.message : "Failed to fetch repositories";
         return NextResponse.json(
-            { error: "Failed to fetch repositories" },
+            { error: errorMessage },
             { status: 500 }
         );
     }
