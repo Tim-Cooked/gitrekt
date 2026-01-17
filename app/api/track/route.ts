@@ -191,6 +191,8 @@ export async function POST(request: Request) {
     const session = await auth();
 
     const accessToken = (session as { accessToken?: string })?.accessToken;
+    const userId = (session as { user?: { id?: string } })?.user?.id;
+
     if (!accessToken) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -225,6 +227,7 @@ export async function POST(request: Request) {
                     where: { repoName: repoFullName },
                     update: { 
                         accessToken: accessToken,
+                        userId: userId,
                         postToLinkedIn: config?.postToLinkedIn ?? false,
                         postToTwitter: config?.postToTwitter ?? false,
                         yoloMode: config?.yoloMode ?? false,
@@ -234,6 +237,7 @@ export async function POST(request: Request) {
                     create: { 
                         repoName: repoFullName, 
                         accessToken: accessToken,
+                        userId: userId,
                         postToLinkedIn: config?.postToLinkedIn ?? false,
                         postToTwitter: config?.postToTwitter ?? false,
                         yoloMode: config?.yoloMode ?? false,
