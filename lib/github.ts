@@ -1,5 +1,13 @@
 const GITHUB_API_BASE = "https://api.github.com";
 
+// GitRekt commit messages - used for workflow management and filtering
+export const GITREKT_COMMIT_MESSAGES = [
+    "Setup GitRekt workflow",
+    "Update GitRekt workflow",
+    "Remove GitRekt workflow",
+    "Initialize GitRekt Repository",
+] as const;
+
 interface GitHubRequestOptions {
     accessToken: string;
     accept?: string;

@@ -3,9 +3,10 @@
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { ArrowLeft, GitCommit, Calendar, User, Loader2, Flame, Clock, CheckCircle, AlertTriangle } from "lucide-react";
+import { ArrowLeft, GitCommit, Calendar, User, Loader2, Flame } from "lucide-react";
+import { GITREKT_COMMIT_MESSAGES } from "@/lib/github";
 
-interface Commit {
+        interface Commit {
     sha: string;
     message: string;
     author: {
@@ -155,6 +156,10 @@ export default function RepoHistoryPage({ params }: { params: Promise<{ slug: st
 
     const getShortSha = (sha: string) => sha.substring(0, 7);
 
+    const isGitRektCommit = (message: string): boolean => {
+        return GITREKT_COMMIT_MESSAGES.some((msg) => message.startsWith(msg));
+    };
+
     return (
         <div className="min-h-screen bg-linear-to-br from-indigo-950 via-purple-900 to-pink-900">
             {/* Header */}
@@ -215,94 +220,117 @@ export default function RepoHistoryPage({ params }: { params: Promise<{ slug: st
                         {commits.map((commit) => {
                             const roast = roastMap.get(commit.sha);
                             const hasRoast = !!roast;
+                            const isGitRekt = isGitRektCommit(commit.message);
 
                             return (
                                 <div
                                     key={commit.sha}
-                                    className={`bg-white/5 border rounded-xl p-5 transition-all duration-200 ${
-                                        hasRoast
-                                            ? "border-red-500/50 hover:border-red-400/70"
-                                            : "border-white/10 hover:bg-white/10 hover:border-purple-500/50"
+                                    className={`border rounded-xl transition-all duration-200 ${
+                                        isGitRekt
+                                            ? "bg-white/3 border-white/5 p-3 opacity-90"
+                                            : hasRoast
+                                            ? "bg-white/5 border-red-500/50 hover:border-red-400/70 p-5"
+                                            : "bg-white/5 border-white/10 hover:bg-white/10 hover:border-purple-500/50 p-5"
                                     }`}
                                 >
-                                    <div className="flex items-start gap-4">
-                                        <div className="shrink-0 mt-1">
-                                            <div className="w-10 h-10 rounded-full bg-linear-to-br from-purple-600 to-pink-600 flex items-center justify-center text-white font-mono text-xs font-bold">
-                                                {commit.author.avatar ? (
-                                                    <Image
-                                                        src={commit.author.avatar}
-                                                        alt={commit.author.name}
-                                                        width={40}
-                                                        height={40}
-                                                        className="w-full h-full rounded-full"
-                                                    />
-                                                ) : (
-                                                    commit.author.name.charAt(0).toUpperCase()
+                                    {isGitRekt ? (
+                                        // Single row layout for GitRekt commits
+                                        <div className="flex items-center gap-3 flex-wrap text-xs text-white/30">
+                                            <p className="text-white/40 font-normal shrink-0">
+                                                {commit.message.split("\n")[0]}
+                                            </p>
+                                            <span className="text-white/20">•</span>
+                                            <div className="flex items-center gap-1.5">
+                                                <User className="w-3 h-3" />
+                                                <span>{commit.author.name}</span>
+                                            </div>
+                                            <span className="text-white/20">•</span>
+                                            <div className="flex items-center gap-1.5">
+                                                <Calendar className="w-3 h-3" />
+                                                <span>{formatDate(commit.author.date)}</span>
+                                            </div>
+                                            <span className="text-white/20">•</span>
+                                            <a
+                                                href={commit.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="font-mono text-purple-400/30 hover:text-purple-400/40 transition-colors"
+                                            >
+                                                {getShortSha(commit.sha)}
+                                            </a>
+                                        </div>
+                                    ) : (
+                                        // Normal layout for user commits
+                                        <div className="flex items-start gap-4">
+                                            <div className="shrink-0 mt-1">
+                                                <div className="w-10 h-10 rounded-full bg-linear-to-br from-purple-600 to-pink-600 flex items-center justify-center text-white font-mono text-xs font-bold">
+                                                    {commit.author.avatar ? (
+                                                        <Image
+                                                            src={commit.author.avatar}
+                                                            alt={commit.author.name}
+                                                            width={40}
+                                                            height={40}
+                                                            className="w-full h-full rounded-full"
+                                                        />
+                                                    ) : (
+                                                        commit.author.name.charAt(0).toUpperCase()
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-start justify-between gap-4 mb-2">
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-2">
+                                                            <p className="text-white font-medium mb-1 wrap-break-word">
+                                                                {commit.message.split("\n")[0]}
+                                                            </p>
+                                                            {hasRoast && (
+                                                                <Flame className="w-5 h-5 text-red-500 shrink-0" />
+                                                            )}
+                                                        </div>
+                                                        <div className="flex items-center gap-4 text-sm text-white/60 flex-wrap">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <User className="w-4 h-4" />
+                                                                <span>{commit.author.name}</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-1.5">
+                                                                <Calendar className="w-4 h-4" />
+                                                                <span>{formatDate(commit.author.date)}</span>
+                                                            </div>
+                                                            <a
+                                                                href={commit.url}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="font-mono text-purple-300 hover:text-purple-200 transition-colors"
+                                                            >
+                                                                {getShortSha(commit.sha)}
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Roast Section */}
+                                                {hasRoast && roast && (
+                                                    <div className="mt-4 space-y-2">
+                                                        {roast.failReason && (
+                                                            <div className="bg-red-950/30 border border-red-900/50 rounded-lg p-3">
+                                                                <p className="text-red-400 text-sm">
+                                                                    <strong>Issue:</strong> {roast.failReason}
+                                                                </p>
+                                                            </div>
+                                                        )}
+                                                        <div className="bg-orange-950/30 border border-orange-500/30 rounded-lg p-4">
+                                                            <p className="text-orange-300 font-medium flex items-center gap-2 mb-2">
+                                                                <Flame className="w-4 h-4" />
+                                                                Roast
+                                                            </p>
+                                                            <p className="text-white/90">{roast.roast}</p>
+                                                        </div>
+                                                    </div>
                                                 )}
                                             </div>
                                         </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-start justify-between gap-4 mb-2">
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center gap-2">
-                                                        <p className="text-white font-medium mb-1 wrap-break-word">
-                                                            {commit.message.split("\n")[0]}
-                                                        </p>
-                                                        {hasRoast && (
-                                                            <Flame className="w-5 h-5 text-red-500 shrink-0" />
-                                                        )}
-                                                    </div>
-                                                    <div className="flex items-center gap-4 text-sm text-white/60 flex-wrap">
-                                                        <div className="flex items-center gap-1.5">
-                                                            <User className="w-4 h-4" />
-                                                            <span>{commit.author.name}</span>
-                                                        </div>
-                                                        <div className="flex items-center gap-1.5">
-                                                            <Calendar className="w-4 h-4" />
-                                                            <span>{formatDate(commit.author.date)}</span>
-                                                        </div>
-                                                        <a
-                                                            href={commit.url}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="font-mono text-purple-300 hover:text-purple-200 transition-colors"
-                                                        >
-                                                            {getShortSha(commit.sha)}
-                                                        </a>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Roast Section */}
-                                            {hasRoast && roast && (
-                                                <div className="mt-4 space-y-3">
-                                                    {/* Timer */}
-                                                    {roast.deadline && (
-                                                        <CountdownTimer 
-                                                            deadline={roast.deadline} 
-                                                            posted={roast.posted}
-                                                            fixed={roast.fixed}
-                                                        />
-                                                    )}
-                                                    
-                                                    {roast.failReason && (
-                                                        <div className="bg-red-950/30 border border-red-900/50 rounded-lg p-3">
-                                                            <p className="text-red-400 text-sm">
-                                                                <strong>Issue:</strong> {roast.failReason}
-                                                            </p>
-                                                        </div>
-                                                    )}
-                                                    <div className="bg-orange-950/30 border border-orange-500/30 rounded-lg p-4">
-                                                        <p className="text-orange-300 font-medium flex items-center gap-2 mb-2">
-                                                            <Flame className="w-4 h-4" />
-                                                            Roast
-                                                        </p>
-                                                        <p className="text-white/90">{roast.roast}</p>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
+                                    )}
                                 </div>
                             );
                         })}
