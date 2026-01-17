@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { Search, Filter, GitBranch, Lock, Star, Code, Loader2 } from "lucide-react";
 
 interface Repo {
@@ -22,6 +23,7 @@ interface RepoListProps {
 type FilterType = "all" | "private" | "public" | "tracked";
 
 export function RepoList({ initialRepos = [] }: RepoListProps) {
+    const router = useRouter();
     const [repos, setRepos] = useState<Repo[]>(initialRepos);
     const [isLoadingRepos, setIsLoadingRepos] = useState(initialRepos.length === 0);
     const [searchQuery, setSearchQuery] = useState("");
