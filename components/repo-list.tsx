@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { Search, Filter, GitBranch, Lock, Star, Code, Loader2 } from "lucide-react";
 
 interface Repo {
@@ -22,6 +23,7 @@ interface RepoListProps {
 type FilterType = "all" | "private" | "public" | "tracked";
 
 export function RepoList({ initialRepos = [] }: RepoListProps) {
+    const router = useRouter();
     const [repos, setRepos] = useState<Repo[]>(initialRepos);
     const [isLoadingRepos, setIsLoadingRepos] = useState(initialRepos.length === 0);
     const [searchQuery, setSearchQuery] = useState("");
@@ -238,6 +240,7 @@ export function RepoList({ initialRepos = [] }: RepoListProps) {
                         return (
                             <div
                                 key={repo.id}
+                                onClick={() => router.push(`/dashboard/repos/${repo.fullName}`)}
                                 className="group bg-linear-to-br from-white/5 to-white/2 border border-white/10 rounded-2xl p-6 hover:bg-linear-to-br hover:from-white/8 hover:to-white/4 hover:border-purple-500/50 hover:shadow-2xl hover:shadow-purple-500/20 transition-all duration-300 cursor-pointer backdrop-blur-sm animate-fade-in shadow-lg shadow-black/5"
                                 style={{ animationDelay: `${index * 50}ms` }}
                             >
@@ -287,7 +290,10 @@ export function RepoList({ initialRepos = [] }: RepoListProps) {
                                         </div>
                                     </div>
                                     <button
-                                        onClick={() => toggleTracking(repo)}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            toggleTracking(repo);
+                                        }}
                                         disabled={loading}
                                         className={`px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-200 shrink-0 ${
                                             isTracked
