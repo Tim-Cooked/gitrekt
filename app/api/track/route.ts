@@ -123,7 +123,68 @@ interface TrackingConfig {
     postToLinkedIn?: boolean;
     postToTwitter?: boolean;
     yoloMode?: boolean;
+    revertCommit?: boolean;
     timerMinutes?: number;
+}
+
+export async function GET(request: Request) {
+    const session = await auth();
+
+    const accessToken = (session as { accessToken?: string })?.accessToken;
+    if (!accessToken) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    try {
+        const { searchParams } = new URL(request.url);
+        const repoFullName = searchParams.get("repoFullName");
+
+        if (!repoFullName) {
+            return NextResponse.json(
+                { error: "Missing repoFullName parameter" },
+                { status: 400 }
+            );
+        }
+
+        const trackedRepo = await prisma.trackedRepo.findUnique({
+            where: { repoName: repoFullName },
+            select: {
+                postToLinkedIn: true,
+                postToTwitter: true,
+                yoloMode: true,
+                revertCommit: true,
+                timerMinutes: true,
+            },
+        });
+
+        if (!trackedRepo) {
+            return NextResponse.json({
+                config: {
+                    postToLinkedIn: false,
+                    postToTwitter: false,
+                    yoloMode: false,
+                    revertCommit: false,
+                    timerMinutes: 30,
+                },
+            });
+        }
+
+        return NextResponse.json({
+            config: {
+                postToLinkedIn: trackedRepo.postToLinkedIn,
+                postToTwitter: trackedRepo.postToTwitter,
+                yoloMode: trackedRepo.yoloMode,
+                revertCommit: trackedRepo.revertCommit,
+                timerMinutes: trackedRepo.timerMinutes,
+            },
+        });
+    } catch (error) {
+        console.error("Error fetching tracking config:", error);
+        return NextResponse.json(
+            { error: "Failed to fetch tracking config" },
+            { status: 500 }
+        );
+    }
 }
 
 export async function POST(request: Request) {
@@ -167,6 +228,7 @@ export async function POST(request: Request) {
                         postToLinkedIn: config?.postToLinkedIn ?? false,
                         postToTwitter: config?.postToTwitter ?? false,
                         yoloMode: config?.yoloMode ?? false,
+                        revertCommit: config?.revertCommit ?? false,
                         timerMinutes: config?.timerMinutes ?? 30,
                     },
                     create: { 
@@ -175,6 +237,7 @@ export async function POST(request: Request) {
                         postToLinkedIn: config?.postToLinkedIn ?? false,
                         postToTwitter: config?.postToTwitter ?? false,
                         yoloMode: config?.yoloMode ?? false,
+                        revertCommit: config?.revertCommit ?? false,
                         timerMinutes: config?.timerMinutes ?? 30,
                     },
                 });

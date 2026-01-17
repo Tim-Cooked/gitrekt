@@ -3,8 +3,9 @@
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { ArrowLeft, GitCommit, Calendar, User, Loader2, Flame, Clock, CheckCircle, AlertTriangle } from "lucide-react";
+import { ArrowLeft, GitCommit, Calendar, User, Loader2, Flame, Clock, CheckCircle, AlertTriangle, Skull, Settings, RotateCcw } from "lucide-react";
 import { GITREKT_COMMIT_MESSAGES } from "@/lib/github";
+import { LinkedInIcon, TwitterIcon } from "@/components/brand-icons";
 
 interface Commit {
     sha: string;
@@ -103,6 +104,7 @@ export default function RepoHistoryPage({ params }: { params: Promise<{ slug: st
     const [roasts, setRoasts] = useState<RoastEvent[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [trackingConfig, setTrackingConfig] = useState<{ postToLinkedIn: boolean; postToTwitter: boolean; yoloMode: boolean; revertCommit: boolean } | null>(null);
 
     const repoFullName = resolvedParams.slug.join("/");
     const [owner, repo] = resolvedParams.slug;
@@ -131,6 +133,17 @@ export default function RepoHistoryPage({ params }: { params: Promise<{ slug: st
                 if (roastsRes.ok) {
                     const roastsData = await roastsRes.json();
                     setRoasts(roastsData.roasts || []);
+                }
+
+                // Fetch tracking config for this repo
+                const configRes = await fetch(`/api/track?repoFullName=${encodeURIComponent(repoFullName)}`, {
+                    credentials: "include",
+                });
+                if (configRes.ok) {
+                    const configData = await configRes.json();
+                    if (configData.config) {
+                        setTrackingConfig(configData.config);
+                    }
                 }
             } catch (err: unknown) {
                 console.error("Failed to fetch data:", err);
@@ -184,19 +197,72 @@ export default function RepoHistoryPage({ params }: { params: Promise<{ slug: st
 
             {/* Main Content */}
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <div className="mb-6">
-                    <h2 className="text-3xl font-bold text-white mb-2 flex items-center gap-2">
-                        <GitCommit className="w-8 h-8" />
-                        Commit History
-                    </h2>
-                    <p className="text-white/60">
-                        Recent commits for this repository
-                        {roasts.length > 0 && (
-                            <span className="ml-2 text-red-400">
-                                • {roasts.length} roast{roasts.length !== 1 ? "s" : ""} 🔥
-                            </span>
-                        )}
-                    </p>
+                <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
+                    <div className="flex-1">
+                        <h2 className="text-3xl font-bold text-white mb-2 flex items-center gap-2">
+                            <GitCommit className="w-8 h-8" />
+                            Commit History
+                        </h2>
+                        <p className="text-white/60">
+                            Recent commits for this repository
+                            {roasts.length > 0 && (
+                                <span className="ml-2 text-red-400">
+                                    • {roasts.length} roast{roasts.length !== 1 ? "s" : ""} 🔥
+                                </span>
+                            )}
+                        </p>
+                    </div>
+                    
+                    {/* Tracking Settings Section */}
+                    {trackingConfig && (
+                        <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-4 py-2">
+                                {trackingConfig.postToLinkedIn ? (
+                                    <div className="p-1.5 bg-blue-600/20 border border-blue-500/30 rounded-lg" title="LinkedIn posting enabled">
+                                        <LinkedInIcon className="w-5 h-5 text-blue-400" />
+                                    </div>
+                                ) : (
+                                    <div className="p-1.5 bg-white/5 border border-white/10 rounded-lg opacity-40" title="LinkedIn posting disabled">
+                                        <LinkedInIcon className="w-5 h-5 text-white/30" />
+                                    </div>
+                                )}
+                                {trackingConfig.postToTwitter ? (
+                                    <div className="p-1.5 bg-gray-600/20 border border-gray-500/30 rounded-lg" title="X (Twitter) posting enabled">
+                                        <TwitterIcon className="w-5 h-5 text-gray-400" />
+                                    </div>
+                                ) : (
+                                    <div className="p-1.5 bg-white/5 border border-white/10 rounded-lg opacity-40" title="X (Twitter) posting disabled">
+                                        <TwitterIcon className="w-5 h-5 text-white/30" />
+                                    </div>
+                                )}
+                                {trackingConfig.yoloMode ? (
+                                    <div className="p-1.5 bg-red-600/20 border border-red-500/30 rounded-lg" title="Hardcore mode enabled">
+                                        <Skull className="w-5 h-5 text-red-400" />
+                                    </div>
+                                ) : (
+                                    <div className="p-1.5 bg-white/5 border border-white/10 rounded-lg opacity-40" title="Hardcore mode disabled">
+                                        <Skull className="w-5 h-5 text-white/30" />
+                                    </div>
+                                )}
+                                {trackingConfig.revertCommit ? (
+                                    <div className="p-1.5 bg-orange-600/20 border border-orange-500/30 rounded-lg" title="Revert commit enabled">
+                                        <RotateCcw className="w-5 h-5 text-orange-400" />
+                                    </div>
+                                ) : (
+                                    <div className="p-1.5 bg-white/5 border border-white/10 rounded-lg opacity-40" title="Revert commit disabled">
+                                        <RotateCcw className="w-5 h-5 text-white/30" />
+                                    </div>
+                                )}
+                            </div>
+                            <button
+                                onClick={() => router.push(`/dashboard/repos/configure/${repoFullName}`)}
+                                className="flex items-center gap-2 px-4 py-2 bg-white/8 hover:bg-white/15 text-white/80 hover:text-white border border-white/20 hover:border-white/35 rounded-xl transition-all duration-200 hover:shadow-md hover:shadow-black/10"
+                            >
+                                <Settings className="w-4 h-4" />
+                                <span className="text-sm font-medium">Settings</span>
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 {error && (

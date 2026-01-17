@@ -1,9 +1,8 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { SignOut } from "@/components/sign-out";
 import { RepoList } from "@/components/repo-list";
+import { UserProfileDropdown } from "@/components/user-profile-dropdown";
 import { Zap, AlertTriangle } from "lucide-react";
-import ConnectXButton from "@/components/linkto-x";
 
 export default async function Dashboard() {
     const session = await auth();
@@ -25,8 +24,7 @@ export default async function Dashboard() {
                             <div className="h-6 w-px bg-linear-to-b from-transparent via-white/20 to-transparent"></div>
                             <span className="text-white/80 text-sm font-medium tracking-wide">Dashboard</span>
                         </div>
-                        <SignOut user={session.user} />
-                        <ConnectXButton />
+                        <UserProfileDropdown user={session.user} />
                     </div>
                 </div>
             </header>
@@ -40,7 +38,7 @@ export default async function Dashboard() {
                             Welcome back, <span className="bg-linear-to-r from-purple-300 to-pink-300 bg-clip-text text-transparent">{session.user.name || "Developer"}</span>
                         </h2>
                     </div>
-                    <p className="text-white/70 text-lg leading-relaxed max-w-2xl">
+                    <p className="text-white/70 text-lg leading-relaxed whitespace-nowrap">
                         Select repositories to track and prepare for consequences when your code breaks.
                     </p>
                 </div>

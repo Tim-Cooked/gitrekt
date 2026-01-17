@@ -255,3 +255,69 @@ export async function deleteRepository(
 
     console.log(`Repository ${repoName} deleted successfully`);
 }
+
+export async function revertToLastCommit(
+    repoName: string,
+    accessToken: string,
+    badCommitSha: string
+): Promise<void> {
+    // Get the parent commit of the bad commit
+    const commitResponse = await fetch(
+        `${GITHUB_API_BASE}/repos/${repoName}/commits/${badCommitSha}`,
+        {
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+                Accept: "application/vnd.github+json",
+            },
+        }
+    );
+
+    if (!commitResponse.ok) {
+        throw new Error(`Failed to fetch commit info: ${await commitResponse.text()}`);
+    }
+
+    const commitData = await commitResponse.json();
+    const parentSha = commitData.parents?.[0]?.sha;
+
+    if (!parentSha) {
+        throw new Error("No parent commit found - cannot revert initial commit");
+    }
+
+    // Get the default branch
+    const repoResponse = await fetch(`${GITHUB_API_BASE}/repos/${repoName}`, {
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            Accept: "application/vnd.github+json",
+        },
+    });
+
+    if (!repoResponse.ok) {
+        throw new Error(`Failed to fetch repo info: ${await repoResponse.text()}`);
+    }
+
+    const repoData = await repoResponse.json();
+    const defaultBranch = repoData.default_branch;
+
+    // Force update the branch to point to the parent commit
+    const updateResponse = await fetch(
+        `${GITHUB_API_BASE}/repos/${repoName}/git/refs/heads/${defaultBranch}`,
+        {
+            method: "PATCH",
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+                Accept: "application/vnd.github+json",
+            },
+            body: JSON.stringify({
+                sha: parentSha,
+                force: true,
+            }),
+        }
+    );
+
+    if (!updateResponse.ok) {
+        const error = await updateResponse.text();
+        throw new Error(`Failed to revert branch: ${error}`);
+    }
+
+    console.log(`Successfully reverted ${repoName} from ${badCommitSha} to ${parentSha}`);
+}

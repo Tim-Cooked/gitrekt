@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Filter, GitBranch, Lock, Star, Code, Loader2 } from "lucide-react";
+import { Search, Filter, GitBranch, Lock, Star, Code, Loader2, Skull, RotateCcw } from "lucide-react";
+import { LinkedInIcon, TwitterIcon } from "@/components/brand-icons";
 
 interface Repo {
     id: number;
@@ -29,8 +30,11 @@ export function RepoList({ initialRepos = [] }: RepoListProps) {
     const [searchQuery, setSearchQuery] = useState("");
     const [filter, setFilter] = useState<FilterType>("all");
     const [trackedRepos, setTrackedRepos] = useState<Set<number>>(new Set());
+    const [trackedRepoConfigs, setTrackedRepoConfigs] = useState<Record<string, { postToLinkedIn: boolean; postToTwitter: boolean; yoloMode: boolean; revertCommit: boolean }>>({});
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [showUntrackModal, setShowUntrackModal] = useState(false);
+    const [repoToUntrack, setRepoToUntrack] = useState<Repo | null>(null);
 
     // Fetch repos on mount if not provided
     useEffect(() => {
@@ -60,6 +64,10 @@ export function RepoList({ initialRepos = [] }: RepoListProps) {
                         });
                         setTrackedRepos(trackedSet);
                     }
+                    // Load tracked repo configs
+                    if (data.trackedRepoConfigs) {
+                        setTrackedRepoConfigs(data.trackedRepoConfigs);
+                    }
                     setIsLoadingRepos(false);
                 })
                 .catch((err) => {
@@ -81,7 +89,15 @@ export function RepoList({ initialRepos = [] }: RepoListProps) {
             return;
         }
 
-        // Untracking - handle directly
+        // Untracking - show confirmation modal
+        setRepoToUntrack(repo);
+        setShowUntrackModal(true);
+    };
+
+    // Handle untrack confirmation
+    const handleUntrackConfirm = async () => {
+        if (!repoToUntrack) return;
+
         setLoading(true);
         setError(null);
 
@@ -93,7 +109,7 @@ export function RepoList({ initialRepos = [] }: RepoListProps) {
                 },
                 credentials: "include",
                 body: JSON.stringify({
-                    repoFullName: repo.fullName,
+                    repoFullName: repoToUntrack.fullName,
                     tracked: false,
                 }),
             });
@@ -112,8 +128,17 @@ export function RepoList({ initialRepos = [] }: RepoListProps) {
 
             // Update local state
             const newTracked = new Set(trackedRepos);
-            newTracked.delete(repo.id);
+            newTracked.delete(repoToUntrack.id);
             setTrackedRepos(newTracked);
+
+            // Remove config from state
+            const newConfigs = { ...trackedRepoConfigs };
+            delete newConfigs[repoToUntrack.fullName];
+            setTrackedRepoConfigs(newConfigs);
+
+            // Close modal
+            setShowUntrackModal(false);
+            setRepoToUntrack(null);
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : "Failed to update tracking. Please try again.";
             setError(errorMessage);
@@ -121,6 +146,12 @@ export function RepoList({ initialRepos = [] }: RepoListProps) {
         } finally {
             setLoading(false);
         }
+    };
+
+    // Handle untrack cancel
+    const handleUntrackCancel = () => {
+        setShowUntrackModal(false);
+        setRepoToUntrack(null);
     };
 
     // Filter and search repos
@@ -256,7 +287,7 @@ export function RepoList({ initialRepos = [] }: RepoListProps) {
                         <p className="text-sm text-white/60">Try adjusting your search or filters</p>
                     </div>
                 ) : (
-                    filteredRepos.map((repo, index) => {
+                    filteredRepos.map((repo) => {
                         const isTracked = trackedRepos.has(repo.id);
                         return (
                             <div
@@ -313,6 +344,49 @@ export function RepoList({ initialRepos = [] }: RepoListProps) {
                                             </div>
                                         </div>
                                     </div>
+                                    
+                                    {/* Tracking Settings Icons */}
+                                    {isTracked && trackedRepoConfigs[repo.fullName] && (
+                                        <div className="flex items-center gap-2 shrink-0">
+                                            {trackedRepoConfigs[repo.fullName].postToLinkedIn ? (
+                                                <div className="p-2 bg-blue-600/20 border border-blue-500/30 rounded-lg" title="LinkedIn posting enabled">
+                                                    <LinkedInIcon className="w-5 h-5 text-blue-400" />
+                                                </div>
+                                            ) : (
+                                                <div className="p-2 bg-white/5 border border-white/10 rounded-lg opacity-40" title="LinkedIn posting disabled">
+                                                    <LinkedInIcon className="w-5 h-5 text-white/30" />
+                                                </div>
+                                            )}
+                                            {trackedRepoConfigs[repo.fullName].postToTwitter ? (
+                                                <div className="p-2 bg-gray-600/20 border border-gray-500/30 rounded-lg" title="X (Twitter) posting enabled">
+                                                    <TwitterIcon className="w-5 h-5 text-gray-400" />
+                                                </div>
+                                            ) : (
+                                                <div className="p-2 bg-white/5 border border-white/10 rounded-lg opacity-40" title="X (Twitter) posting disabled">
+                                                    <TwitterIcon className="w-5 h-5 text-white/30" />
+                                                </div>
+                                            )}
+                                            {trackedRepoConfigs[repo.fullName].yoloMode ? (
+                                                <div className="p-2 bg-red-600/20 border border-red-500/30 rounded-lg" title="Hardcore mode enabled">
+                                                    <Skull className="w-5 h-5 text-red-400" />
+                                                </div>
+                                            ) : (
+                                                <div className="p-2 bg-white/5 border border-white/10 rounded-lg opacity-40" title="Hardcore mode disabled">
+                                                    <Skull className="w-5 h-5 text-white/30" />
+                                                </div>
+                                            )}
+                                            {trackedRepoConfigs[repo.fullName].revertCommit ? (
+                                                <div className="p-2 bg-orange-600/20 border border-orange-500/30 rounded-lg" title="Revert commit enabled">
+                                                    <RotateCcw className="w-5 h-5 text-orange-400" />
+                                                </div>
+                                            ) : (
+                                                <div className="p-2 bg-white/5 border border-white/10 rounded-lg opacity-40" title="Revert commit disabled">
+                                                    <RotateCcw className="w-5 h-5 text-white/30" />
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                    
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
@@ -341,6 +415,51 @@ export function RepoList({ initialRepos = [] }: RepoListProps) {
                 )}
                     </div>
                 </>
+            )}
+
+            {/* Untrack Confirmation Modal */}
+            {showUntrackModal && repoToUntrack && (
+                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+                    <div className="bg-gray-900 border border-purple-500/50 rounded-2xl p-8 max-w-md w-full shadow-2xl shadow-purple-500/20">
+                        {/* GitRekt Logo */}
+                        <div className="flex justify-center mb-6">
+                            <h2 className="text-4xl font-bold text-transparent bg-clip-text bg-linear-to-r from-pink-400 via-purple-400 to-blue-400">
+                                GitRekt
+                            </h2>
+                        </div>
+
+                        {/* Confirmation Message */}
+                        <div className="text-center mb-8">
+                            <p className="text-white text-lg font-semibold mb-2">
+                                Untrack Repository?
+                            </p>
+                            <p className="text-white/70 text-sm">
+                                Are you sure you want to untrack <span className="font-medium text-white">{repoToUntrack.name}</span> from GitRekt?
+                            </p>
+                            <p className="text-white/60 text-xs mt-3">
+                                This will remove the webhook and workflow file from the repository.
+                            </p>
+                        </div>
+
+                        {/* Buttons */}
+                        <div className="flex gap-3">
+                            <button
+                                onClick={handleUntrackCancel}
+                                disabled={loading}
+                                className="flex-1 px-4 py-3 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleUntrackConfirm}
+                                disabled={loading}
+                                className="flex-1 px-4 py-3 bg-linear-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-500 hover:to-pink-500 transition-all font-medium shadow-lg shadow-purple-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {loading ? "Untracking..." : "Confirm"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );
