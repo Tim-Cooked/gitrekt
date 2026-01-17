@@ -3,7 +3,7 @@
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { ArrowLeft, GitCommit, Calendar, User, Loader2, Flame, Clock, CheckCircle, AlertTriangle, Skull, Settings } from "lucide-react";
+import { ArrowLeft, GitCommit, Calendar, User, Loader2, Flame, Clock, CheckCircle, AlertTriangle, Skull, Settings, RotateCcw } from "lucide-react";
 import { GITREKT_COMMIT_MESSAGES } from "@/lib/github";
 import { LinkedInIcon, TwitterIcon } from "@/components/brand-icons";
 
@@ -104,7 +104,7 @@ export default function RepoHistoryPage({ params }: { params: Promise<{ slug: st
     const [roasts, setRoasts] = useState<RoastEvent[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [trackingConfig, setTrackingConfig] = useState<{ postToLinkedIn: boolean; postToTwitter: boolean; yoloMode: boolean } | null>(null);
+    const [trackingConfig, setTrackingConfig] = useState<{ postToLinkedIn: boolean; postToTwitter: boolean; yoloMode: boolean; revertCommit: boolean } | null>(null);
 
     const repoFullName = resolvedParams.slug.join("/");
     const [owner, repo] = resolvedParams.slug;
@@ -242,6 +242,15 @@ export default function RepoHistoryPage({ params }: { params: Promise<{ slug: st
                                 ) : (
                                     <div className="p-1.5 bg-white/5 border border-white/10 rounded-lg opacity-40" title="Hardcore mode disabled">
                                         <Skull className="w-5 h-5 text-white/30" />
+                                    </div>
+                                )}
+                                {trackingConfig.revertCommit ? (
+                                    <div className="p-1.5 bg-orange-600/20 border border-orange-500/30 rounded-lg" title="Revert commit enabled">
+                                        <RotateCcw className="w-5 h-5 text-orange-400" />
+                                    </div>
+                                ) : (
+                                    <div className="p-1.5 bg-white/5 border border-white/10 rounded-lg opacity-40" title="Revert commit disabled">
+                                        <RotateCcw className="w-5 h-5 text-white/30" />
                                     </div>
                                 )}
                             </div>

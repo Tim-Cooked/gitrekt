@@ -41,14 +41,15 @@ export async function GET() {
 
         // Fetch tracked repos from database with config
         let trackedRepoSet = new Set<string>();
-        let trackedRepoConfigs: Record<string, { postToLinkedIn: boolean; postToTwitter: boolean; yoloMode: boolean }> = {};
+        let trackedRepoConfigs: Record<string, { postToLinkedIn: boolean; postToTwitter: boolean; yoloMode: boolean; revertCommit: boolean }> = {};
         try {
-            const trackedRepos: Array<{ repoName: string; postToLinkedIn: boolean; postToTwitter: boolean; yoloMode: boolean }> = await prisma.trackedRepo.findMany({
+            const trackedRepos: Array<{ repoName: string; postToLinkedIn: boolean; postToTwitter: boolean; yoloMode: boolean; revertCommit: boolean }> = await prisma.trackedRepo.findMany({
                 select: { 
                     repoName: true,
                     postToLinkedIn: true,
                     postToTwitter: true,
                     yoloMode: true,
+                    revertCommit: true,
                 },
             });
             trackedRepoSet = new Set<string>(trackedRepos.map((tr) => tr.repoName));
@@ -57,9 +58,10 @@ export async function GET() {
                     postToLinkedIn: tr.postToLinkedIn,
                     postToTwitter: tr.postToTwitter,
                     yoloMode: tr.yoloMode,
+                    revertCommit: tr.revertCommit,
                 };
                 return acc;
-            }, {} as Record<string, { postToLinkedIn: boolean; postToTwitter: boolean; yoloMode: boolean }>);
+            }, {} as Record<string, { postToLinkedIn: boolean; postToTwitter: boolean; yoloMode: boolean; revertCommit: boolean }>);
         } catch (dbError) {
             console.error("Error fetching tracked repos from database:", dbError);
             // Continue without tracked repos if DB query fails

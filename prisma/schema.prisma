@@ -14,29 +14,30 @@ datasource db {
 }
 
 model TrackedRepo {
-  id          String   @id @default(cuid())
-  repoName    String   @unique
+  id          String @id @default(cuid())
+  repoName    String @unique
   accessToken String
-  
+
   // Punishment settings
-  postToLinkedIn  Boolean @default(false)
-  postToTwitter   Boolean @default(false)
-  yoloMode        Boolean @default(false)  // Delete repo on failure
-  timerMinutes    Int     @default(30)      // Time to fix before posting
-  
+  postToLinkedIn Boolean @default(false)
+  postToTwitter  Boolean @default(false)
+  yoloMode       Boolean @default(false) // Delete repo on failure
+  revertCommit   Boolean @default(false) // Revert to previous successful commit
+  timerMinutes   Int     @default(30) // Time to fix before posting
+
   // Social media credentials (encrypted in production)
-  linkedInToken   String?
-  twitterToken    String?
-  twitterSecret   String?
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  events      Event[]
+  linkedInToken String?
+  twitterToken  String?
+  twitterSecret String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events Event[]
 }
 
 model Event {
-  id            String   @id @default(cuid())
+  id            String  @id @default(cuid())
   repoName      String
   actor         String
   commitMessage String
@@ -44,13 +45,15 @@ model Event {
   diffSummary   String?
   roast         String
   failReason    String?
-  
+
   // Timer for social posting
-  deadline      DateTime?  // When the roast will be posted if not fixed
-  posted        Boolean    @default(false)  // Whether it was posted to social
-  fixed         Boolean    @default(false)  // Whether the user fixed it in time
-  
-  createdAt     DateTime @default(now())
+  deadline DateTime? // When the roast will be posted if not fixed
+  posted   Boolean   @default(false) // Whether it was posted to social
+  fixed    Boolean   @default(false) // Whether the user fixed it in time
+
+  createdAt     DateTime     @default(now())
+  trackedRepo   TrackedRepo? @relation(fields: [trackedRepoId], references: [id])
+  trackedRepoId String?
 }
 
 model PendingRoast {
@@ -64,7 +67,7 @@ model PendingRoast {
   failReason    String?
   errorDetails  String?
   status        String    @default("pending") // pending, resolved, expired
-  expiresAt     DateTime  // 15 minutes from creation
+  expiresAt     DateTime // 15 minutes from creation
   createdAt     DateTime  @default(now())
   resolvedAt    DateTime?
 }
