@@ -27,6 +27,23 @@ export async function POST(req: NextRequest) {
             );
         }
 
+        const commitInfo = await getCommitInfo(repo, trackedRepo.accessToken, sha);
+
+        // Skip GitRekt workflow commits
+        const gitRektCommitMessages = [
+            "Setup GitRekt workflow",
+            "Update GitRekt workflow",
+            "Initialize GitRekt Repository",
+        ];
+        
+        if (gitRektCommitMessages.some(msg => commitInfo.message.startsWith(msg))) {
+            console.log(`⏭️ Skipping GitRekt system commit: ${commitInfo.message}`);
+            return NextResponse.json({
+                verdict: "skip",
+                message: "GitRekt system commit - not judged",
+            });
+        }
+
         const diff = await getCommitDiff(repo, trackedRepo.accessToken, sha);
 
         if (!diff) {
@@ -34,6 +51,23 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({
                 verdict: "pass",
                 message: "No changes to judge",
+            });
+        }
+
+        // Skip if the only changes are to the GitRekt workflow file
+        const diffLines = diff.split('\n');
+        const changedFiles = diffLines
+            .filter(line => line.startsWith('diff --git'))
+            .map(line => line.split(' b/')[1]);
+        
+        const onlyGitRektChanges = changedFiles.length > 0 && 
+            changedFiles.every(file => file === '.github/workflows/gitrekt.yml');
+        
+        if (onlyGitRektChanges) {
+            console.log(`⏭️ Skipping commit that only modifies GitRekt workflow`);
+            return NextResponse.json({
+                verdict: "skip",
+                message: "Only GitRekt workflow changes - not judged",
             });
         }
 
@@ -48,8 +82,6 @@ export async function POST(req: NextRequest) {
         }
 
         console.log(`❌ Code failed: ${judgment.reason}`);
-
-        const commitInfo = await getCommitInfo(repo, trackedRepo.accessToken, sha);
 
         const roast = await generateRoast(
             commitInfo.author,
