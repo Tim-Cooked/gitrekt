@@ -4,7 +4,8 @@ import { NextResponse } from "next/server";
 export async function GET() {
     const session = await auth();
     
-    if (!session?.accessToken) {
+    const accessToken = (session as { accessToken?: string })?.accessToken;
+    if (!accessToken) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -12,7 +13,7 @@ export async function GET() {
         // Fetch all repos (including private ones)
         const reposResponse = await fetch("https://api.github.com/user/repos?per_page=100&sort=updated", {
             headers: {
-                Authorization: `Bearer ${session.accessToken}`,
+                Authorization: `Bearer ${accessToken}`,
                 Accept: "application/vnd.github.v3+json",
             },
         });
