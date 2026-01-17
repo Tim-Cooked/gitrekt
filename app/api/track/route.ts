@@ -154,6 +154,7 @@ export async function GET(request: Request) {
                 yoloMode: true,
                 revertCommit: true,
                 timerMinutes: true,
+                createdAt: true,
             },
         });
 
@@ -176,6 +177,7 @@ export async function GET(request: Request) {
                 yoloMode: trackedRepo.yoloMode,
                 revertCommit: trackedRepo.revertCommit,
                 timerMinutes: trackedRepo.timerMinutes,
+                createdAt: trackedRepo.createdAt.toISOString(),
             },
         });
     } catch (error) {
@@ -220,6 +222,26 @@ export async function POST(request: Request) {
             }
 
             try {
+                // Get LinkedIn token from session if available
+                let linkedInToken = (session as { linkedinAccessToken?: string })?.linkedinAccessToken || null;
+                
+                // If not in session but LinkedIn posting is enabled, try to get from UserSession database
+                if (!linkedInToken && config?.postToLinkedIn) {
+                    try {
+                        const githubUser = (session as { githubUser?: { id?: string } })?.githubUser;
+                        if (githubUser?.id) {
+                            // @ts-expect-error - Prisma generates userSession from UserSession model
+                            const dbUser = await prisma.userSession.findUnique({
+                                where: { githubId: githubUser.id },
+                                select: { linkedInToken: true },
+                            });
+                            linkedInToken = dbUser?.linkedInToken || null;
+                        }
+                    } catch (error) {
+                        console.error("Error fetching LinkedIn token from database:", error);
+                    }
+                }
+                
                 // Store in database with config
                 await prisma.trackedRepo.upsert({
                     where: { repoName: repoFullName },
@@ -230,6 +252,9 @@ export async function POST(request: Request) {
                         yoloMode: config?.yoloMode ?? false,
                         revertCommit: config?.revertCommit ?? false,
                         timerMinutes: config?.timerMinutes ?? 30,
+                        // Only update linkedInToken if we have one and LinkedIn posting is enabled
+                        // Set to null if posting is disabled to clear any existing token
+                        linkedInToken: config?.postToLinkedIn && linkedInToken ? linkedInToken : null,
                     },
                     create: { 
                         repoName: repoFullName, 
@@ -239,6 +264,7 @@ export async function POST(request: Request) {
                         yoloMode: config?.yoloMode ?? false,
                         revertCommit: config?.revertCommit ?? false,
                         timerMinutes: config?.timerMinutes ?? 30,
+                        linkedInToken: config?.postToLinkedIn && linkedInToken ? linkedInToken : null,
                     },
                 });
             } catch (error) {

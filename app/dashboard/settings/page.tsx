@@ -2,8 +2,7 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { LinkedInIcon, TwitterIcon } from "@/components/brand-icons";
-import ConnectLinkedinButton from "@/components/linkto-linkedin";
+import { SocialMediaConnections } from "@/components/social-media-connections";
 
 export default async function SettingsPage() {
     const session = await auth();
@@ -44,43 +43,11 @@ export default async function SettingsPage() {
                             Connect your social media accounts to enable automatic posting when your code fails.
                         </p>
 
-                        <div className="space-y-4">
-                            {/* LinkedIn */}
-                            <div className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl">
-                                <div className="flex items-center gap-4">
-                                    <div className="p-3 bg-blue-600/20 border border-blue-500/30 rounded-lg">
-                                        <LinkedInIcon className="w-6 h-6 text-blue-400" />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-white font-medium">LinkedIn</h3>
-                                        <p className="text-white/60 text-sm">Connect your LinkedIn account</p>
-                                    </div>
-                                </div>
-                                <button
-                                    className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/30"
-                                >
-                                    <ConnectLinkedinButton />
-                                </button>
-                            </div>
-
-                            {/* X (Twitter) */}
-                            <div className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl">
-                                <div className="flex items-center gap-4">
-                                    <div className="p-3 bg-gray-600/20 border border-gray-500/30 rounded-lg">
-                                        <TwitterIcon className="w-6 h-6 text-gray-400" />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-white font-medium">X (Twitter)</h3>
-                                        <p className="text-white/60 text-sm">Connect your X account</p>
-                                    </div>
-                                </div>
-                                <button
-                                    className="px-6 py-2.5 bg-gray-700 hover:bg-gray-600 text-white font-medium rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-gray-500/30"
-                                >
-                                    Connect
-                                </button>
-                            </div>
-                        </div>
+                        <SocialMediaConnections 
+                            linkedInConnected={!!session.linkedinAccessToken}
+                            twitterConnected={!!session.xAccessToken}
+                            hasGitHubSession={!!session.accessToken}
+                        />
                     </div>
                 </div>
             </main>
