@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { LinkedInIcon, TwitterIcon } from "@/components/brand-icons";
+import ConnectLinkedinButton from "@/components/linkto-linkedin";
 
 export default async function SettingsPage() {
     const session = await auth();
@@ -58,7 +59,7 @@ export default async function SettingsPage() {
                                 <button
                                     className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/30"
                                 >
-                                    Connect
+                                    <ConnectLinkedinButton />
                                 </button>
                             </div>
 
