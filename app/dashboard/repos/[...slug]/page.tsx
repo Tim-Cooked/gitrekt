@@ -3,7 +3,7 @@
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { ArrowLeft, GitCommit, Calendar, User, Loader2, Flame } from "lucide-react";
+import { ArrowLeft, GitCommit, Calendar, User, Loader2, Flame, Clock, CheckCircle, AlertTriangle } from "lucide-react";
 
 interface Commit {
     sha: string;
@@ -24,7 +24,75 @@ interface RoastEvent {
     commitMessage: string;
     roast: string;
     failReason: string | null;
+    deadline: string | null;
+    posted: boolean;
+    fixed: boolean;
     createdAt: string;
+}
+
+function CountdownTimer({ deadline, posted, fixed }: { deadline: string; posted: boolean; fixed: boolean }) {
+    const [timeLeft, setTimeLeft] = useState<string>("");
+    const [isExpired, setIsExpired] = useState(false);
+
+    useEffect(() => {
+        const calculateTimeLeft = () => {
+            const now = new Date().getTime();
+            const deadlineTime = new Date(deadline).getTime();
+            const difference = deadlineTime - now;
+
+            if (difference <= 0) {
+                setIsExpired(true);
+                setTimeLeft("Expired");
+                return;
+            }
+
+            const hours = Math.floor(difference / (1000 * 60 * 60));
+            const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+
+            if (hours > 0) {
+                setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
+            } else if (minutes > 0) {
+                setTimeLeft(`${minutes}m ${seconds}s`);
+            } else {
+                setTimeLeft(`${seconds}s`);
+            }
+        };
+
+        calculateTimeLeft();
+        const interval = setInterval(calculateTimeLeft, 1000);
+
+        return () => clearInterval(interval);
+    }, [deadline]);
+
+    if (fixed) {
+        return (
+            <div className="flex items-center gap-2 text-green-400">
+                <CheckCircle className="w-4 h-4" />
+                <span className="text-sm font-medium">Fixed in time!</span>
+            </div>
+        );
+    }
+
+    if (posted || isExpired) {
+        return (
+            <div className="flex items-center gap-2 text-red-400">
+                <AlertTriangle className="w-4 h-4" />
+                <span className="text-sm font-medium">Posted to social media</span>
+            </div>
+        );
+    }
+
+    const isUrgent = new Date(deadline).getTime() - new Date().getTime() < 5 * 60 * 1000; // Less than 5 minutes
+
+    return (
+        <div className={`flex items-center gap-2 ${isUrgent ? "text-red-400 animate-pulse" : "text-amber-400"}`}>
+            <Clock className="w-4 h-4" />
+            <span className="text-sm font-medium">
+                Fix in: <span className="font-mono">{timeLeft}</span>
+            </span>
+        </div>
+    );
 }
 
 export default function RepoHistoryPage({ params }: { params: Promise<{ slug: string[] }> }) {
@@ -207,7 +275,16 @@ export default function RepoHistoryPage({ params }: { params: Promise<{ slug: st
 
                                             {/* Roast Section */}
                                             {hasRoast && roast && (
-                                                <div className="mt-4 space-y-2">
+                                                <div className="mt-4 space-y-3">
+                                                    {/* Timer */}
+                                                    {roast.deadline && (
+                                                        <CountdownTimer 
+                                                            deadline={roast.deadline} 
+                                                            posted={roast.posted}
+                                                            fixed={roast.fixed}
+                                                        />
+                                                    )}
+                                                    
                                                     {roast.failReason && (
                                                         <div className="bg-red-950/30 border border-red-900/50 rounded-lg p-3">
                                                             <p className="text-red-400 text-sm">

@@ -92,6 +92,10 @@ export async function POST(req: NextRequest) {
             judgment.reason
         );
 
+        // Calculate deadline based on repo settings
+        const deadline = new Date();
+        deadline.setMinutes(deadline.getMinutes() + trackedRepo.timerMinutes);
+
         await prisma.event.create({
             data: {
                 repoName: repo,
@@ -101,6 +105,7 @@ export async function POST(req: NextRequest) {
                 diffSummary: diff.substring(0, 5000),
                 roast,
                 failReason: judgment.reason,
+                deadline: deadline,
             },
         });
 
@@ -109,6 +114,8 @@ export async function POST(req: NextRequest) {
                 verdict: "fail",
                 message: judgment.reason,
                 roast,
+                deadline: deadline.toISOString(),
+                timerMinutes: trackedRepo.timerMinutes,
             },
             { status: 400 }
         );

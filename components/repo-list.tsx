@@ -60,11 +60,18 @@ export function RepoList({ initialRepos = [] }: RepoListProps) {
         }
     }, [initialRepos.length]);
 
+
     // Toggle tracking for a repo
     const toggleTracking = async (repo: Repo) => {
         const isCurrentlyTracked = trackedRepos.has(repo.id);
-        const newTrackedState = !isCurrentlyTracked;
+        
+        if (!isCurrentlyTracked) {
+            // Redirect to configure page for new tracking
+            router.push(`/dashboard/repos/configure/${repo.fullName}`);
+            return;
+        }
 
+        // Untracking - handle directly
         setLoading(true);
         setError(null);
 
@@ -77,7 +84,7 @@ export function RepoList({ initialRepos = [] }: RepoListProps) {
                 credentials: "include",
                 body: JSON.stringify({
                     repoFullName: repo.fullName,
-                    tracked: newTrackedState,
+                    tracked: false,
                 }),
             });
 
@@ -88,11 +95,7 @@ export function RepoList({ initialRepos = [] }: RepoListProps) {
 
             // Update local state
             const newTracked = new Set(trackedRepos);
-            if (newTrackedState) {
-                newTracked.add(repo.id);
-            } else {
-                newTracked.delete(repo.id);
-            }
+            newTracked.delete(repo.id);
             setTrackedRepos(newTracked);
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : "Failed to update tracking. Please try again.";
