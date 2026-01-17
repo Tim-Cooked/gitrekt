@@ -51,6 +51,20 @@ model Event {
   fixed         Boolean    @default(false)  // Whether the user fixed it in time
   
   createdAt     DateTime @default(now())
-  
-  trackedRepo   TrackedRepo? @relation(fields: [repoName], references: [repoName], onDelete: Cascade)
+}
+
+model PendingRoast {
+  id            String    @id @default(cuid())
+  repoName      String
+  actor         String
+  commitMessage String
+  commitSha     String
+  diffSummary   String?
+  roast         String
+  failReason    String?
+  errorDetails  String?
+  status        String    @default("pending") // pending, resolved, expired
+  expiresAt     DateTime  // 15 minutes from creation
+  createdAt     DateTime  @default(now())
+  resolvedAt    DateTime?
 }

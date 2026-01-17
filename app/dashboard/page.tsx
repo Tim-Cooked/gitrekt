@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { SignOut } from "@/components/sign-out";
 import { RepoList } from "@/components/repo-list";
 import { Zap, AlertTriangle } from "lucide-react";
+import ConnectXButton from "@/components/linkto-x";
 
 export default async function Dashboard() {
     const session = await auth();
@@ -25,6 +26,7 @@ export default async function Dashboard() {
                             <span className="text-white/80 text-sm font-medium tracking-wide">Dashboard</span>
                         </div>
                         <SignOut user={session.user} />
+                        <ConnectXButton />
                     </div>
                 </div>
             </header>

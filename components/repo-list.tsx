@@ -261,9 +261,12 @@ export function RepoList({ initialRepos = [] }: RepoListProps) {
                         return (
                             <div
                                 key={repo.id}
-                                onClick={() => router.push(`/dashboard/repos/${repo.fullName}`)}
-                                className="group bg-linear-to-br from-white/5 to-white/2 border border-white/10 rounded-2xl p-6 hover:bg-linear-to-br hover:from-white/8 hover:to-white/4 hover:border-purple-500/50 hover:shadow-2xl hover:shadow-purple-500/20 transition-all duration-300 cursor-pointer backdrop-blur-sm animate-fade-in shadow-lg shadow-black/5"
-                                style={{ animationDelay: `${index * 50}ms` }}
+                                onClick={(e) => {
+                                    // Don't navigate if clicking the button
+                                    if ((e.target as HTMLElement).closest('button')) return;
+                                    router.push(`/dashboard/repos/${repo.fullName}`);
+                                }}
+                                className="group bg-white/5 border border-white/10 rounded-xl p-5 hover:bg-white/10 hover:border-purple-500/50 transition-all duration-200 cursor-pointer"
                             >
                                 <div className="flex items-start justify-between gap-5">
                                     <div className="flex-1 min-w-0">
