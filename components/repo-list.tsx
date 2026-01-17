@@ -50,6 +50,16 @@ export function RepoList({ initialRepos = [] }: RepoListProps) {
                         throw new Error(data.error);
                     }
                     setRepos(data.repos || []);
+                    // Load tracked repos from API response
+                    if (data.trackedRepos && Array.isArray(data.trackedRepos)) {
+                        const trackedSet = new Set<number>();
+                        data.repos.forEach((repo: Repo) => {
+                            if (data.trackedRepos.includes(repo.fullName)) {
+                                trackedSet.add(repo.id);
+                            }
+                        });
+                        setTrackedRepos(trackedSet);
+                    }
                     setIsLoadingRepos(false);
                 })
                 .catch((err) => {
@@ -82,8 +92,15 @@ export function RepoList({ initialRepos = [] }: RepoListProps) {
             });
 
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ error: "Failed to update tracking" }));
-                throw new Error(errorData.error || "Failed to update tracking");
+                let errorData;
+                try {
+                    errorData = await response.json();
+                } catch {
+                    errorData = { error: `HTTP ${response.status}: ${response.statusText}` };
+                }
+                const errorMessage = errorData.error || `Failed to update tracking (HTTP ${response.status})`;
+                console.error("API error response:", errorData);
+                throw new Error(errorMessage);
             }
 
             // Update local state

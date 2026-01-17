@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
 interface GitHubRepo {
     id: number;
@@ -36,6 +37,12 @@ export async function GET() {
 
         const repos: GitHubRepo[] = await reposResponse.json();
 
+        // Fetch tracked repos from database
+        const trackedRepos = await prisma.trackedRepo.findMany({
+            select: { repoName: true },
+        });
+        const trackedRepoSet = new Set<string>(trackedRepos.map((tr) => tr.repoName));
+
         // Transform repos to include only needed data
         const formattedRepos = repos.map((repo) => ({
             id: repo.id,
@@ -49,7 +56,10 @@ export async function GET() {
             defaultBranch: repo.default_branch,
         }));
 
-        return NextResponse.json({ repos: formattedRepos });
+        return NextResponse.json({ 
+            repos: formattedRepos,
+            trackedRepos: Array.from(trackedRepoSet)
+        });
     } catch (error) {
         console.error("Error fetching repos:", error);
         return NextResponse.json(
