@@ -6,7 +6,7 @@ import { Code } from "lucide-react"
 export default function ConnectLinkedinButton() {
 
   const handleConnectLinkedin = () => {
-    signIn("linkedin", { callbackUrl: "/dashboard" })
+    signIn("linkedin", {   redirect: false, })
   }
 
   return (
