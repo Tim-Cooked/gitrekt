@@ -95,8 +95,9 @@ export function RepoList({ initialRepos = [] }: RepoListProps) {
             }
             setTrackedRepos(newTracked);
         } catch (err) {
-            setError("Failed to update tracking. Please try again.");
-            console.error(err);
+            const errorMessage = err instanceof Error ? err.message : "Failed to update tracking. Please try again.";
+            setError(errorMessage);
+            console.error("Tracking error:", err);
         } finally {
             setLoading(false);
         }

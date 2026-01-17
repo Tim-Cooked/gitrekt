@@ -138,15 +138,39 @@ export async function POST(request: Request) {
         }
 
         if (tracked) {
-            await createWebhook(repoFullName, accessToken);
+            try {
+                // Create webhook
+                await createWebhook(repoFullName, accessToken);
+            } catch (error) {
+                console.error("Error creating webhook:", error);
+                const errorMsg = error instanceof Error ? error.message : "Failed to create webhook";
+                throw new Error(`Webhook creation failed: ${errorMsg}`);
+            }
 
-            await prisma.trackedRepo.upsert({
-                where: { repoName: repoFullName },
-                update: { accessToken },
-                create: { repoName: repoFullName, accessToken },
-            });
+            try {
+                // Store in database
+                await prisma.trackedRepo.upsert({
+                    where: { repoName: repoFullName },
+                    update: { accessToken: accessToken },
+                    create: { 
+                        repoName: repoFullName, 
+                        accessToken: accessToken 
+                    },
+                });
+            } catch (error) {
+                console.error("Error storing in database:", error);
+                const errorMsg = error instanceof Error ? error.message : "Database operation failed";
+                throw new Error(`Database error: ${errorMsg}`);
+            }
 
-            await installWatchdog(repoFullName, accessToken);
+            try {
+                // Install the GitHub Actions workflow
+                await installWatchdog(repoFullName, accessToken);
+            } catch (error) {
+                console.error("Error installing workflow:", error);
+                const errorMsg = error instanceof Error ? error.message : "Failed to install workflow";
+                throw new Error(`Workflow installation failed: ${errorMsg}`);
+            }
         } else {
             await prisma.trackedRepo
                 .delete({ where: { repoName: repoFullName } })
@@ -156,8 +180,9 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: true, tracked });
     } catch (error) {
         console.error("Error updating tracking:", error);
+        const errorMessage = error instanceof Error ? error.message : "Failed to update tracking";
         return NextResponse.json(
-            { error: "Failed to update tracking" },
+            { error: errorMessage },
             { status: 500 }
         );
     }
