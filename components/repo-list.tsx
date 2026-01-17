@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Filter, GitBranch, Lock, Star, Code, Loader2, Network, MessageSquare, Skull } from "lucide-react";
+import { Search, Filter, GitBranch, Lock, Star, Code, Loader2, Skull } from "lucide-react";
+import { LinkedInIcon, TwitterIcon } from "@/components/brand-icons";
 
 interface Repo {
     id: number;
@@ -349,12 +350,12 @@ export function RepoList({ initialRepos = [] }: RepoListProps) {
                                         <div className="flex items-center gap-2 shrink-0">
                                             {trackedRepoConfigs[repo.fullName].postToLinkedIn && (
                                                 <div className="p-2 bg-blue-600/20 border border-blue-500/30 rounded-lg" title="LinkedIn posting enabled">
-                                                    <Network className="w-5 h-5 text-blue-400" />
+                                                    <LinkedInIcon className="w-5 h-5 text-blue-400" />
                                                 </div>
                                             )}
                                             {trackedRepoConfigs[repo.fullName].postToTwitter && (
                                                 <div className="p-2 bg-gray-600/20 border border-gray-500/30 rounded-lg" title="X (Twitter) posting enabled">
-                                                    <MessageSquare className="w-5 h-5 text-gray-400" />
+                                                    <TwitterIcon className="w-5 h-5 text-gray-400" />
                                                 </div>
                                             )}
                                             {trackedRepoConfigs[repo.fullName].yoloMode && (

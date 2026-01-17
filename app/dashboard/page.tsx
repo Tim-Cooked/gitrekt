@@ -1,9 +1,8 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { SignOut } from "@/components/sign-out";
 import { RepoList } from "@/components/repo-list";
+import { UserProfileDropdown } from "@/components/user-profile-dropdown";
 import { Zap, AlertTriangle } from "lucide-react";
-import ConnectXButton from "@/components/linkto-x";
 
 export default async function Dashboard() {
     const session = await auth();
@@ -25,8 +24,7 @@ export default async function Dashboard() {
                             <div className="h-6 w-px bg-linear-to-b from-transparent via-white/20 to-transparent"></div>
                             <span className="text-white/80 text-sm font-medium tracking-wide">Dashboard</span>
                         </div>
-                        <SignOut user={session.user} />
-                        <ConnectXButton />
+                        <UserProfileDropdown user={session.user} />
                     </div>
                 </div>
             </header>
