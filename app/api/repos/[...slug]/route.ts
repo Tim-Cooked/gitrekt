@@ -49,7 +49,9 @@ export async function GET(
             );
 
             if (!commitsResponse.ok) {
-                throw new Error("Failed to fetch commits");
+                const errorText = await commitsResponse.text().catch(() => "Unknown error");
+                console.error(`GitHub API error: ${commitsResponse.status} - ${errorText}`);
+                throw new Error(`GitHub API error: ${commitsResponse.status} - ${errorText}`);
             }
 
             const commits: GitHubCommit[] = await commitsResponse.json();
@@ -70,8 +72,9 @@ export async function GET(
             return NextResponse.json({ commits: formattedCommits });
         } catch (error) {
             console.error("Error fetching commits:", error);
+            const errorMessage = error instanceof Error ? error.message : "Failed to fetch commits";
             return NextResponse.json(
-                { error: "Failed to fetch commits" },
+                { error: errorMessage },
                 { status: 500 }
             );
         }
