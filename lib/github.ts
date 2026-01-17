@@ -144,3 +144,86 @@ export async function isRepoEmpty(
         return false;
     }
 }
+
+export async function deleteWebhook(
+    repoName: string,
+    accessToken: string
+): Promise<void> {
+    const webhookUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/github`;
+    
+    // List all webhooks to find ours
+    const hooksResponse = await fetch(`${GITHUB_API_BASE}/repos/${repoName}/hooks`, {
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            Accept: "application/vnd.github+json",
+        },
+    });
+
+    if (!hooksResponse.ok) {
+        // If we can't list hooks, silently fail (webhook might not exist)
+        return;
+    }
+
+    const hooks = await hooksResponse.json();
+    const ourHook = hooks.find((hook: { config: { url: string } }) => 
+        hook.config?.url === webhookUrl
+    );
+
+    if (ourHook) {
+        const deleteResponse = await fetch(
+            `${GITHUB_API_BASE}/repos/${repoName}/hooks/${ourHook.id}`,
+            {
+                method: "DELETE",
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    Accept: "application/vnd.github+json",
+                },
+            }
+        );
+
+        if (!deleteResponse.ok && deleteResponse.status !== 404) {
+            console.error("Failed to delete webhook:", await deleteResponse.text());
+        }
+    }
+}
+
+export async function deleteWorkflow(
+    repoName: string,
+    accessToken: string
+): Promise<void> {
+    const defaultBranch = await getDefaultBranch(repoName, accessToken);
+    const fileUrl = `https://api.github.com/repos/${repoName}/contents/.github/workflows/gitrekt.yml`;
+
+    // Get the file SHA
+    const getResponse = await fetch(fileUrl, {
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            Accept: "application/vnd.github+json",
+        },
+    });
+
+    if (!getResponse.ok) {
+        // File doesn't exist, nothing to delete
+        return;
+    }
+
+    const fileData = await getResponse.json();
+
+    // Delete the file by setting content to empty and sha
+    const deleteResponse = await fetch(fileUrl, {
+        method: "DELETE",
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            Accept: "application/vnd.github+json",
+        },
+        body: JSON.stringify({
+            message: "Remove GitRekt workflow",
+            sha: fileData.sha,
+            branch: defaultBranch,
+        }),
+    });
+
+    if (!deleteResponse.ok && deleteResponse.status !== 404) {
+        console.error("Failed to delete workflow:", await deleteResponse.text());
+    }
+}
