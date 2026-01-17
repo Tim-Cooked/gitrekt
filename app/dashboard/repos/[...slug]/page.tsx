@@ -245,7 +245,7 @@ export default function RepoHistoryPage({ params }: { params: Promise<{ slug: st
                                             <div className="flex items-start justify-between gap-4 mb-2">
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex items-center gap-2">
-                                                        <p className="text-white font-medium mb-1 break-words">
+                                                        <p className="text-white font-medium mb-1 wrap-break-word">
                                                             {commit.message.split("\n")[0]}
                                                         </p>
                                                         {hasRoast && (
