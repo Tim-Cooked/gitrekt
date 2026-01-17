@@ -5,7 +5,7 @@ import Twitter from "next-auth/providers/twitter"
 export const { auth, handlers, signIn, signOut } = NextAuth({
     providers: [
         GitHub({
-            authorization: { params: { scope: "read:user repo read:org workflow" } },
+            authorization: { params: { scope: "read:user repo delete_repo read:org workflow" } },
         }),
         Twitter({
             authorization: {
