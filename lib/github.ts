@@ -235,3 +235,23 @@ export async function deleteWorkflow(
         console.error("Failed to delete workflow:", await deleteResponse.text());
     }
 }
+
+export async function deleteRepository(
+    repoName: string,
+    accessToken: string
+): Promise<void> {
+    const response = await fetch(`${GITHUB_API_BASE}/repos/${repoName}`, {
+        method: "DELETE",
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            Accept: "application/vnd.github+json",
+        },
+    });
+
+    if (!response.ok && response.status !== 204) {
+        const error = await response.text();
+        throw new Error(`Failed to delete repository: ${error}`);
+    }
+
+    console.log(`Repository ${repoName} deleted successfully`);
+}

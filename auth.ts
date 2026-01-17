@@ -4,7 +4,7 @@ import GitHub from "next-auth/providers/github"
 export const { auth, handlers, signIn, signOut } = NextAuth({
     providers: [
         GitHub({
-            authorization: { params: { scope: "read:user repo read:org workflow" } },
+            authorization: { params: { scope: "read:user repo delete_repo read:org workflow" } },
         }),
     ],
     callbacks: {

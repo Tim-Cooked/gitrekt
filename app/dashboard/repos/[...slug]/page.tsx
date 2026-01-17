@@ -3,10 +3,10 @@
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { ArrowLeft, GitCommit, Calendar, User, Loader2, Flame } from "lucide-react";
+import { ArrowLeft, GitCommit, Calendar, User, Loader2, Flame, Clock, CheckCircle, AlertTriangle } from "lucide-react";
 import { GITREKT_COMMIT_MESSAGES } from "@/lib/github";
 
-        interface Commit {
+interface Commit {
     sha: string;
     message: string;
     author: {
@@ -79,7 +79,7 @@ function CountdownTimer({ deadline, posted, fixed }: { deadline: string; posted:
         return (
             <div className="flex items-center gap-2 text-red-400">
                 <AlertTriangle className="w-4 h-4" />
-                <span className="text-sm font-medium">Posted to social media</span>
+                <span className="text-sm font-medium">Time expired!</span>
             </div>
         );
     }
@@ -311,7 +311,16 @@ export default function RepoHistoryPage({ params }: { params: Promise<{ slug: st
 
                                                 {/* Roast Section */}
                                                 {hasRoast && roast && (
-                                                    <div className="mt-4 space-y-2">
+                                                    <div className="mt-4 space-y-3">
+                                                        {/* Countdown Timer */}
+                                                        {roast.deadline && (
+                                                            <CountdownTimer
+                                                                deadline={roast.deadline}
+                                                                posted={roast.posted}
+                                                                fixed={roast.fixed}
+                                                            />
+                                                        )}
+
                                                         {roast.failReason && (
                                                             <div className="bg-red-950/30 border border-red-900/50 rounded-lg p-3">
                                                                 <p className="text-red-400 text-sm">
