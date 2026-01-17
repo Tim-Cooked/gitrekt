@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCommitDiff } from "@/lib/github";
+import { getCommitDiff, getCommitInfo } from "@/lib/github";
+import { judgeCode, generateRoast } from "@/lib/llm";
 
 export async function POST(req: NextRequest) {
     try {
@@ -13,7 +14,8 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        // Get tracked repo for access token
+        console.log(`Judging commit ${sha} in ${repo}`);
+
         const trackedRepo = await prisma.trackedRepo.findUnique({
             where: { repoName: repo },
         });
@@ -25,16 +27,59 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        // Fetch the diff
         const diff = await getCommitDiff(repo, trackedRepo.accessToken, sha);
 
-        // TODO
-        // For now, just return success (the actual failure detection
-        // happens via the workflow_run webhook)
-        return NextResponse.json({ 
-            message: "Judgment recorded",
-            verdict: "pending" 
+        if (!diff) {
+            console.log("No diff found, passing by default");
+            return NextResponse.json({
+                verdict: "pass",
+                message: "No changes to judge",
+            });
+        }
+
+        const judgment = await judgeCode(diff);
+
+        if (judgment.pass) {
+            console.log(`✅ Code passed: ${judgment.reason}`);
+            return NextResponse.json({
+                verdict: "pass",
+                message: judgment.reason,
+            });
+        }
+
+        console.log(`❌ Code failed: ${judgment.reason}`);
+
+        const commitInfo = await getCommitInfo(repo, trackedRepo.accessToken, sha);
+
+        const roast = await generateRoast(
+            commitInfo.author,
+            repo,
+            commitInfo.message,
+            commitInfo.branch || "unknown",
+            diff,
+            judgment.reason
+        );
+
+        await prisma.event.create({
+            data: {
+                repoName: repo,
+                actor: commitInfo.author,
+                commitMessage: commitInfo.message,
+                commitSha: sha,
+                diffSummary: diff.substring(0, 5000),
+                roast,
+                failReason: judgment.reason,
+            },
         });
+
+        return NextResponse.json(
+            {
+                verdict: "fail",
+                message: judgment.reason,
+                roast,
+            },
+            { status: 400 }
+        );
     } catch (error) {
         console.error("Judge error:", error);
         return NextResponse.json(
