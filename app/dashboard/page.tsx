@@ -12,13 +12,13 @@ export default async function Dashboard() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-indigo-950 via-purple-900 to-pink-900">
+        <div className="min-h-screen bg-linear-to-br from-indigo-950 via-purple-900 to-pink-900">
             {/* Header */}
-            <header className="border-b border-white/10 bg-gradient-to-r from-indigo-950/50 to-purple-900/50 backdrop-blur-sm">
+            <header className="border-b border-white/10 bg-linear-to-r from-indigo-950/50 to-purple-900/50 backdrop-blur-sm">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                            <h1 className="text-2xl font-bold bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 bg-clip-text text-transparent">
+                            <h1 className="text-2xl font-bold bg-linear-to-r from-pink-400 via-purple-400 to-blue-400 bg-clip-text text-transparent">
                                 GitRekt
                             </h1>
                             <div className="h-6 w-px bg-white/20"></div>
@@ -45,7 +45,7 @@ export default async function Dashboard() {
 
                 {/* Info Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                    <div className="bg-gradient-to-br from-purple-600/20 to-pink-600/20 border border-purple-500/30 rounded-xl p-5 backdrop-blur-sm">
+                    <div className="bg-linear-to-br from-purple-600/20 to-pink-600/20 border border-purple-500/30 rounded-xl p-5 backdrop-blur-sm">
                         <div className="flex items-center gap-3 mb-2">
                             <div className="p-2 bg-purple-600/30 rounded-lg">
                                 <Zap className="w-5 h-5 text-purple-300" />
@@ -53,10 +53,10 @@ export default async function Dashboard() {
                             <h3 className="text-lg font-semibold text-white">Auto-Tracking</h3>
                         </div>
                         <p className="text-white/70 text-sm">
-                            When you track a repo, we'll automatically set up GitHub Actions to monitor your commits.
+                            When you track a repo, we&apos;ll automatically set up GitHub Actions to monitor your commits.
                         </p>
                     </div>
-                    <div className="bg-gradient-to-br from-red-600/20 to-orange-600/20 border border-red-500/30 rounded-xl p-5 backdrop-blur-sm">
+                    <div className="bg-linear-to-br from-red-600/20 to-orange-600/20 border border-red-500/30 rounded-xl p-5 backdrop-blur-sm">
                         <div className="flex items-center gap-3 mb-2">
                             <div className="p-2 bg-red-600/30 rounded-lg">
                                 <AlertTriangle className="w-5 h-5 text-red-300" />

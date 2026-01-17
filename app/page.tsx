@@ -10,10 +10,10 @@ export default async function Home() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center p-4">
+        <div className="min-h-screen bg-linear-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center p-4">
             <div className="max-w-4xl w-full text-center space-y-8 animate-fade-in">
                 <div className="space-y-4">
-                    <h1 className="text-7xl md:text-9xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 animate-pulse">
+                    <h1 className="text-7xl md:text-9xl font-bold text-transparent bg-clip-text bg-linear-to-r from-pink-400 via-purple-400 to-blue-400 animate-pulse">
                         GitRekt
                     </h1>
                     <p className="text-2xl md:text-3xl text-white/90 font-light">
