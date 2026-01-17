@@ -3,8 +3,9 @@
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { ArrowLeft, GitCommit, Calendar, User, Loader2, Flame, Clock, CheckCircle, AlertTriangle, Linkedin, Twitter, Skull, Settings } from "lucide-react";
+import { ArrowLeft, GitCommit, Calendar, User, Loader2, Flame, Clock, CheckCircle, AlertTriangle, Skull, Settings } from "lucide-react";
 import { GITREKT_COMMIT_MESSAGES } from "@/lib/github";
+import { LinkedInIcon, TwitterIcon } from "@/components/brand-icons";
 
 interface Commit {
     sha: string;
@@ -218,20 +219,20 @@ export default function RepoHistoryPage({ params }: { params: Promise<{ slug: st
                             <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-4 py-2">
                                 {trackingConfig.postToLinkedIn ? (
                                     <div className="p-1.5 bg-blue-600/20 border border-blue-500/30 rounded-lg" title="LinkedIn posting enabled">
-                                        <Linkedin className="w-5 h-5 text-blue-400" />
+                                        <LinkedInIcon className="w-5 h-5 text-blue-400" />
                                     </div>
                                 ) : (
                                     <div className="p-1.5 bg-white/5 border border-white/10 rounded-lg opacity-40" title="LinkedIn posting disabled">
-                                        <Linkedin className="w-5 h-5 text-white/30" />
+                                        <LinkedInIcon className="w-5 h-5 text-white/30" />
                                     </div>
                                 )}
                                 {trackingConfig.postToTwitter ? (
                                     <div className="p-1.5 bg-gray-600/20 border border-gray-500/30 rounded-lg" title="X (Twitter) posting enabled">
-                                        <Twitter className="w-5 h-5 text-gray-400" />
+                                        <TwitterIcon className="w-5 h-5 text-gray-400" />
                                     </div>
                                 ) : (
                                     <div className="p-1.5 bg-white/5 border border-white/10 rounded-lg opacity-40" title="X (Twitter) posting disabled">
-                                        <Twitter className="w-5 h-5 text-white/30" />
+                                        <TwitterIcon className="w-5 h-5 text-white/30" />
                                     </div>
                                 )}
                                 {trackingConfig.yoloMode ? (
