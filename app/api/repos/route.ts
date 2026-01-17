@@ -39,13 +39,27 @@ export async function GET() {
 
         const repos: GitHubRepo[] = await reposResponse.json();
 
-        // Fetch tracked repos from database
+        // Fetch tracked repos from database with config
         let trackedRepoSet = new Set<string>();
+        let trackedRepoConfigs: Record<string, { postToLinkedIn: boolean; postToTwitter: boolean; yoloMode: boolean }> = {};
         try {
-            const trackedRepos: Array<{ repoName: string }> = await prisma.trackedRepo.findMany({
-                select: { repoName: true },
+            const trackedRepos: Array<{ repoName: string; postToLinkedIn: boolean; postToTwitter: boolean; yoloMode: boolean }> = await prisma.trackedRepo.findMany({
+                select: { 
+                    repoName: true,
+                    postToLinkedIn: true,
+                    postToTwitter: true,
+                    yoloMode: true,
+                },
             });
             trackedRepoSet = new Set<string>(trackedRepos.map((tr) => tr.repoName));
+            trackedRepoConfigs = trackedRepos.reduce((acc, tr) => {
+                acc[tr.repoName] = {
+                    postToLinkedIn: tr.postToLinkedIn,
+                    postToTwitter: tr.postToTwitter,
+                    yoloMode: tr.yoloMode,
+                };
+                return acc;
+            }, {} as Record<string, { postToLinkedIn: boolean; postToTwitter: boolean; yoloMode: boolean }>);
         } catch (dbError) {
             console.error("Error fetching tracked repos from database:", dbError);
             // Continue without tracked repos if DB query fails
@@ -66,7 +80,8 @@ export async function GET() {
 
         return NextResponse.json({ 
             repos: formattedRepos,
-            trackedRepos: Array.from(trackedRepoSet)
+            trackedRepos: Array.from(trackedRepoSet),
+            trackedRepoConfigs
         });
     } catch (error) {
         console.error("Error fetching repos:", error);
