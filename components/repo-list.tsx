@@ -31,6 +31,8 @@ export function RepoList({ initialRepos = [] }: RepoListProps) {
     const [trackedRepos, setTrackedRepos] = useState<Set<number>>(new Set());
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [showUntrackModal, setShowUntrackModal] = useState(false);
+    const [repoToUntrack, setRepoToUntrack] = useState<Repo | null>(null);
 
     // Fetch repos on mount if not provided
     useEffect(() => {
@@ -81,7 +83,15 @@ export function RepoList({ initialRepos = [] }: RepoListProps) {
             return;
         }
 
-        // Untracking - handle directly
+        // Untracking - show confirmation modal
+        setRepoToUntrack(repo);
+        setShowUntrackModal(true);
+    };
+
+    // Handle untrack confirmation
+    const handleUntrackConfirm = async () => {
+        if (!repoToUntrack) return;
+
         setLoading(true);
         setError(null);
 
@@ -93,7 +103,7 @@ export function RepoList({ initialRepos = [] }: RepoListProps) {
                 },
                 credentials: "include",
                 body: JSON.stringify({
-                    repoFullName: repo.fullName,
+                    repoFullName: repoToUntrack.fullName,
                     tracked: false,
                 }),
             });
@@ -112,8 +122,12 @@ export function RepoList({ initialRepos = [] }: RepoListProps) {
 
             // Update local state
             const newTracked = new Set(trackedRepos);
-            newTracked.delete(repo.id);
+            newTracked.delete(repoToUntrack.id);
             setTrackedRepos(newTracked);
+
+            // Close modal
+            setShowUntrackModal(false);
+            setRepoToUntrack(null);
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : "Failed to update tracking. Please try again.";
             setError(errorMessage);
@@ -121,6 +135,12 @@ export function RepoList({ initialRepos = [] }: RepoListProps) {
         } finally {
             setLoading(false);
         }
+    };
+
+    // Handle untrack cancel
+    const handleUntrackCancel = () => {
+        setShowUntrackModal(false);
+        setRepoToUntrack(null);
     };
 
     // Filter and search repos
@@ -341,6 +361,51 @@ export function RepoList({ initialRepos = [] }: RepoListProps) {
                 )}
                     </div>
                 </>
+            )}
+
+            {/* Untrack Confirmation Modal */}
+            {showUntrackModal && repoToUntrack && (
+                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+                    <div className="bg-gray-900 border border-purple-500/50 rounded-2xl p-8 max-w-md w-full shadow-2xl shadow-purple-500/20">
+                        {/* GitRekt Logo */}
+                        <div className="flex justify-center mb-6">
+                            <h2 className="text-4xl font-bold text-transparent bg-clip-text bg-linear-to-r from-pink-400 via-purple-400 to-blue-400">
+                                GitRekt
+                            </h2>
+                        </div>
+
+                        {/* Confirmation Message */}
+                        <div className="text-center mb-8">
+                            <p className="text-white text-lg font-semibold mb-2">
+                                Untrack Repository?
+                            </p>
+                            <p className="text-white/70 text-sm">
+                                Are you sure you want to untrack <span className="font-medium text-white">{repoToUntrack.name}</span> from GitRekt?
+                            </p>
+                            <p className="text-white/60 text-xs mt-3">
+                                This will remove the webhook and workflow file from the repository.
+                            </p>
+                        </div>
+
+                        {/* Buttons */}
+                        <div className="flex gap-3">
+                            <button
+                                onClick={handleUntrackCancel}
+                                disabled={loading}
+                                className="flex-1 px-4 py-3 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleUntrackConfirm}
+                                disabled={loading}
+                                className="flex-1 px-4 py-3 bg-linear-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-500 hover:to-pink-500 transition-all font-medium shadow-lg shadow-purple-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {loading ? "Untracking..." : "Confirm"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

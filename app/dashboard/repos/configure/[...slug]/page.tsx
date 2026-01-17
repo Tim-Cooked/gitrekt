@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, use } from "react";
+import { useState, use, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Linkedin, Twitter, Skull, Clock, Shield, AlertTriangle } from "lucide-react";
 
@@ -26,6 +26,36 @@ export default function ConfigureTrackingPage({ params }: { params: Promise<{ sl
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [showYoloConfirm, setShowYoloConfirm] = useState(false);
+    const [loadingConfig, setLoadingConfig] = useState(true);
+
+    // Load existing config on mount
+    useEffect(() => {
+        const loadConfig = async () => {
+            try {
+                const response = await fetch(`/api/track?repoFullName=${encodeURIComponent(repoFullName)}`, {
+                    credentials: "include",
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.config) {
+                        setConfig({
+                            postToLinkedIn: data.config.postToLinkedIn ?? false,
+                            postToTwitter: data.config.postToTwitter ?? false,
+                            yoloMode: data.config.yoloMode ?? false,
+                            timerMinutes: data.config.timerMinutes ?? 30,
+                        });
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to load config:", err);
+                // Continue with defaults if loading fails
+            } finally {
+                setLoadingConfig(false);
+            }
+        };
+
+        loadConfig();
+    }, [repoFullName]);
 
     const handleSubmit = async () => {
         if (config.yoloMode && !showYoloConfirm) {
@@ -91,6 +121,11 @@ export default function ConfigureTrackingPage({ params }: { params: Promise<{ sl
 
             {/* Main Content */}
             <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                {loadingConfig ? (
+                    <div className="flex items-center justify-center py-20">
+                        <div className="text-white/70">Loading configuration...</div>
+                    </div>
+                ) : (
                 <div className="space-y-8">
                     {/* Info Banner */}
                     <div className="bg-purple-500/20 border border-purple-500/30 rounded-xl p-4">
@@ -317,6 +352,7 @@ export default function ConfigureTrackingPage({ params }: { params: Promise<{ sl
                         {loading ? "Setting up tracking..." : "Start Tracking"}
                     </button>
                 </div>
+                )}
             </main>
         </div>
     );
