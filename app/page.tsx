@@ -19,8 +19,8 @@ export default async function Home() {
                     <p className="text-2xl md:text-3xl text-white/90 font-light">
                         The Ultimate Code Punishment System
                     </p>
-                    <p className="text-lg md:text-xl text-white/70 max-w-2xl mx-auto mt-6">
-                        Connect your GitHub repos and face the consequences when your code breaks. 
+                    <p className="text-lg md:text-xl text-white/70 mt-6 md:whitespace-nowrap">
+                        Connect your GitHub repos and face the consequences when your code breaks.
                         <span className="block mt-2 text-purple-300">No mercy for bad commits. 💀</span>
                     </p>
                 </div>

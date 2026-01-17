@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { Search, Filter, GitBranch, Lock, Star, Code, Loader2 } from "lucide-react";
 
 interface Repo {
@@ -22,6 +23,7 @@ interface RepoListProps {
 type FilterType = "all" | "private" | "public" | "tracked";
 
 export function RepoList({ initialRepos = [] }: RepoListProps) {
+    const router = useRouter();
     const [repos, setRepos] = useState<Repo[]>(initialRepos);
     const [isLoadingRepos, setIsLoadingRepos] = useState(initialRepos.length === 0);
     const [searchQuery, setSearchQuery] = useState("");
@@ -228,6 +230,11 @@ export function RepoList({ initialRepos = [] }: RepoListProps) {
                         return (
                             <div
                                 key={repo.id}
+                                onClick={(e) => {
+                                    // Don't navigate if clicking the button
+                                    if ((e.target as HTMLElement).closest('button')) return;
+                                    router.push(`/dashboard/repos/${repo.fullName}`);
+                                }}
                                 className="group bg-white/5 border border-white/10 rounded-xl p-5 hover:bg-white/10 hover:border-purple-500/50 transition-all duration-200 cursor-pointer"
                             >
                                 <div className="flex items-start justify-between gap-4">

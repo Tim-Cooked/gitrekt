@@ -1,6 +1,18 @@
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
 
+interface GitHubRepo {
+    id: number;
+    name: string;
+    full_name: string;
+    description: string | null;
+    private: boolean;
+    language: string | null;
+    stargazers_count: number;
+    updated_at: string;
+    default_branch: string;
+}
+
 export async function GET() {
     const session = await auth();
     
@@ -22,10 +34,10 @@ export async function GET() {
             throw new Error("Failed to fetch repos");
         }
 
-        const repos = await reposResponse.json();
+        const repos: GitHubRepo[] = await reposResponse.json();
 
         // Transform repos to include only needed data
-        const formattedRepos = repos.map((repo: any) => ({
+        const formattedRepos = repos.map((repo) => ({
             id: repo.id,
             name: repo.name,
             fullName: repo.full_name,

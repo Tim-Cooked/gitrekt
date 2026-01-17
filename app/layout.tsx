@@ -13,8 +13,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "GitRekt - The Ultimate Code Punishment System",
-  description: "Connect your GitHub repos and face the consequences when your code breaks. Built for Hack and Roll 2026.",
+  title: "GitRekt",
+  description: "The Ultimate Code Punishment System",
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({
