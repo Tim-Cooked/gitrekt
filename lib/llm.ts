@@ -60,6 +60,9 @@ Reply with JSON format: {"pass": true/false, "reason": "brief explanation"}
         console.error("Error judging code:", error);
         // Fail open - don't block on AI errors
         return { pass: true, reason: "AI judgment unavailable" };
+        
+        // For testing
+        // return { pass: false, reason: "You suck"};
     }
 }
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { deleteRepository } from "@/lib/github";
+import { deleteRepository, revertToLastCommit } from "@/lib/github";
 
 export async function GET(req: NextRequest) {
     // Verify cron secret to prevent unauthorized access
@@ -24,9 +24,6 @@ export async function GET(req: NextRequest) {
                 posted: false,
                 fixed: false,
             },
-            include: {
-                trackedRepo: true,
-            },
         });
 
         console.log(`🔍 Found ${expiredRoasts.length} expired roasts to process`);
@@ -34,9 +31,13 @@ export async function GET(req: NextRequest) {
         const results = [];
 
         for (const roast of expiredRoasts) {
-            const repo = roast.trackedRepo;
+            // Fetch the tracked repo separately using repoName
+            const repo = await prisma.trackedRepo.findUnique({
+                where: { repoName: roast.repoName },
+            });
+
             if (!repo) {
-                console.log(`⚠️ No tracked repo found for roast ${roast.id}`);
+                console.log(`⚠️ No tracked repo found for roast ${roast.id} (repo: ${roast.repoName})`);
                 // Mark as posted to avoid reprocessing
                 await prisma.event.update({
                     where: { id: roast.id },
@@ -53,6 +54,19 @@ export async function GET(req: NextRequest) {
                 data: { posted: true },
             });
 
+            // Handle revert commit - revert to previous commit
+            if (repo.revertCommit && roast.commitSha) {
+                try {
+                    console.log(`↩️ REVERT MODE: Attempting to revert commit ${roast.commitSha} in ${repo.repoName}`);
+                    await revertToLastCommit(repo.repoName, repo.accessToken, roast.commitSha);
+                    actions.push("commit_reverted");
+                    console.log(`✅ REVERT MODE: Successfully reverted commit in ${repo.repoName}`);
+                } catch (error) {
+                    console.error(`❌ Failed to revert commit in ${repo.repoName}:`, error);
+                    actions.push("revert_failed");
+                }
+            }
+
             // Handle YOLO mode - delete the repository
             if (repo.yoloMode) {
                 try {
@@ -62,7 +76,6 @@ export async function GET(req: NextRequest) {
                     console.log(`💀 YOLO MODE: Successfully deleted repository ${repo.repoName}`);
                     
                     // Clean up the tracked repo from database since it no longer exists
-                    // This will also cascade delete related events
                     await prisma.trackedRepo.delete({
                         where: { repoName: repo.repoName },
                     }).catch((e) => {
@@ -73,11 +86,9 @@ export async function GET(req: NextRequest) {
                     console.error(`❌ Failed to delete repo ${repo.repoName}:`, error);
                     actions.push("repo_deletion_failed");
                 }
-            } else {
-                actions.push("no_yolo_mode");
+            } else if (!repo.revertCommit) {
+                actions.push("no_punishment_mode");
                 // TODO: Add social media posting here in the future
-                // if (repo.postToTwitter) { ... }
-                // if (repo.postToLinkedIn) { ... }
             }
 
             results.push({
@@ -86,6 +97,7 @@ export async function GET(req: NextRequest) {
                 actor: roast.actor,
                 commitMessage: roast.commitMessage,
                 yoloMode: repo.yoloMode,
+                revertCommit: repo.revertCommit,
                 actions,
             });
         }
