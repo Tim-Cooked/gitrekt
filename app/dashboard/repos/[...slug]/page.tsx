@@ -111,27 +111,66 @@ export default function RepoHistoryPage({ params }: { params: Promise<{ slug: st
     const repoFullName = resolvedParams.slug.join("/");
     const [owner, repo] = resolvedParams.slug;
 
-    // ... (fetch logic remains the same)
-    
+    useEffect(() => {
+        async function fetchData() {
+            setLoading(true);
+            try {
+                // Fetch commit history
+                const commitsRes = await fetch(`/api/repos/${repoFullName}/commits`);
+                if (!commitsRes.ok) throw new Error("Failed to fetch commits");
+                const commitsData = await commitsRes.json();
+                console.log("Commits data:", commitsData);
+
+                // Fetch existing roasts
+                const roastsRes = await fetch(`/api/roasts/${repoFullName}`);
+                if (!roastsRes.ok) throw new Error("Failed to fetch roasts");
+                const roastsData = await roastsRes.json();
+                console.log("Roasts data:", roastsData);
+
+                // Fetch tracking settings
+                const trackRes = await fetch(`/api/track/${repoFullName}`);
+                if (!trackRes.ok) throw new Error("Failed to fetch tracking settings");
+                const trackData = await trackRes.json();
+                console.log("Tracking data:", trackData);
+
+                setCommits(commitsData.commits || []);
+                setRoasts(roastsData.roasts || []);
+
+                if (trackData.tracked && trackData.config) {
+                    setTrackingConfig(trackData.config);
+                } else {
+                    setTrackingConfig(null);
+                }
+            } catch (err) {
+                console.error("Error fetching repo data:", err);
+                setError("Failed to load repository data");
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        fetchData();
+    }, [repoFullName]);
+
     // Poll for updates if there are commits being evaluated
     useEffect(() => {
         if (!trackingConfig || !trackingConfig.createdAt) return;
-        
+
         const roastMap = new Map(roasts.map((r) => [r.commitSha, r]));
         const trackingStartDate = new Date(trackingConfig.createdAt);
-        
+
         // Check if any commits are being evaluated
         const hasEvaluatingCommits = commits.some(commit => {
             const commitDate = new Date(commit.author.date);
             if (commitDate < trackingStartDate) return false;
-            
+
             const roast = roastMap.get(commit.sha);
             // If there's no roast record, it's being evaluated
             return !roast;
         });
-        
+
         if (!hasEvaluatingCommits) return;
-        
+
         // Poll every 3 seconds while there are evaluating commits
         const pollInterval = setInterval(() => {
             async function refreshData() {
@@ -149,7 +188,7 @@ export default function RepoHistoryPage({ params }: { params: Promise<{ slug: st
             }
             refreshData();
         }, 3000);
-        
+
         return () => clearInterval(pollInterval);
     }, [commits, roasts, trackingConfig, repoFullName]);
 
@@ -216,6 +255,8 @@ export default function RepoHistoryPage({ params }: { params: Promise<{ slug: st
         }
     };
 
+    const roastMap = new Map(roasts.map((r) => [r.commitSha, r]));
+
     return (
         <div className="min-h-screen bg-background">
             {/* Header */}
@@ -259,7 +300,7 @@ export default function RepoHistoryPage({ params }: { params: Promise<{ slug: st
                             )}
                         </p>
                     </div>
-                    
+
                     {/* Tracking Settings Section */}
                     {trackingConfig && (
                         <div className="flex items-center gap-4">
@@ -270,7 +311,7 @@ export default function RepoHistoryPage({ params }: { params: Promise<{ slug: st
                                     { icon: Skull, active: trackingConfig.yoloMode, color: 'bg-neo-accent', label: 'Hardcore' },
                                     { icon: RotateCcw, active: trackingConfig.revertCommit, color: 'bg-neo-muted', label: 'Revert' }
                                 ].map((social, i) => (
-                                    <div 
+                                    <div
                                         key={i}
                                         className={`p-2 border-2 border-black transition-all ${social.active ? social.color : 'bg-white opacity-20'}`}
                                         title={`${social.label} ${social.active ? 'enabled' : 'disabled'}`}
@@ -318,15 +359,14 @@ export default function RepoHistoryPage({ params }: { params: Promise<{ slug: st
                             return (
                                 <div
                                     key={commit.sha}
-                                    className={`border-4 border-black transition-all ${
-                                        isGitRekt
-                                            ? "bg-white/50 border-black p-4 opacity-70 border-dashed"
-                                            : isDeleted
+                                    className={`border-4 border-black transition-all ${isGitRekt
+                                        ? "bg-white/50 border-black p-4 opacity-70 border-dashed"
+                                        : isDeleted
                                             ? "bg-neo-muted/20 border-black p-8 shadow-neo-sm grayscale"
                                             : hasRoast
-                                            ? "bg-white border-black p-8 shadow-neo-md"
-                                            : "bg-white border-black p-8 shadow-neo-sm hover:shadow-neo-md hover:-translate-y-1"
-                                    }`}
+                                                ? "bg-white border-black p-8 shadow-neo-md"
+                                                : "bg-white border-black p-8 shadow-neo-sm hover:shadow-neo-md hover:-translate-y-1"
+                                        }`}
                                 >
                                     {isGitRekt ? (
                                         // Single row layout for GitRekt commits
@@ -359,9 +399,8 @@ export default function RepoHistoryPage({ params }: { params: Promise<{ slug: st
                                         // Normal layout for user commits
                                         <div className="flex flex-col md:flex-row items-start gap-8">
                                             <div className="shrink-0">
-                                                <div className={`w-16 h-16 border-4 border-black flex items-center justify-center shadow-neo-xs ${
-                                                    isDeleted ? "bg-neo-muted" : "bg-neo-secondary"
-                                                }`}>
+                                                <div className={`w-16 h-16 border-4 border-black flex items-center justify-center shadow-neo-xs ${isDeleted ? "bg-neo-muted" : "bg-neo-secondary"
+                                                    }`}>
                                                     {commit.author.avatar ? (
                                                         <Image
                                                             src={commit.author.avatar}
@@ -379,9 +418,8 @@ export default function RepoHistoryPage({ params }: { params: Promise<{ slug: st
                                                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                                                     <div className="space-y-2">
                                                         <div className="flex items-center gap-4 flex-wrap">
-                                                            <p className={`text-2xl font-black uppercase tracking-tight ${
-                                                                isDeleted ? "text-black/40 line-through" : "text-black"
-                                                            }`}>
+                                                            <p className={`text-2xl font-black uppercase tracking-tight ${isDeleted ? "text-black/40 line-through" : "text-black"
+                                                                }`}>
                                                                 {commit.message.split("\n")[0]}
                                                             </p>
                                                             {isDeleted && (
@@ -393,9 +431,8 @@ export default function RepoHistoryPage({ params }: { params: Promise<{ slug: st
                                                                 <Flame className="w-8 h-8 text-neo-accent" />
                                                             )}
                                                         </div>
-                                                        <div className={`flex items-center gap-6 text-[10px] font-black uppercase tracking-widest ${
-                                                            isDeleted ? "text-black/30" : "text-black/60"
-                                                        }`}>
+                                                        <div className={`flex items-center gap-6 text-[10px] font-black uppercase tracking-widest ${isDeleted ? "text-black/30" : "text-black/60"
+                                                            }`}>
                                                             <div className="flex items-center gap-2">
                                                                 <User className="w-4 h-4" />
                                                                 <span>{commit.author.name}</span>
@@ -408,11 +445,10 @@ export default function RepoHistoryPage({ params }: { params: Promise<{ slug: st
                                                                 href={commit.url}
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
-                                                                className={`font-mono underline decoration-2 transition-all ${
-                                                                    isDeleted 
-                                                                        ? "text-black/30" 
-                                                                        : "text-black hover:bg-neo-secondary"
-                                                                }`}
+                                                                className={`font-mono underline decoration-2 transition-all ${isDeleted
+                                                                    ? "text-black/30"
+                                                                    : "text-black hover:bg-neo-secondary"
+                                                                    }`}
                                                             >
                                                                 {getShortSha(commit.sha)}
                                                             </a>
