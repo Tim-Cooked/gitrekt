@@ -1,4 +1,6 @@
 import NextAuth from "next-auth"
+import { decode } from "next-auth/jwt"
+import { cookies } from "next/headers"
 import GitHub from "next-auth/providers/github"
 import Twitter from "next-auth/providers/twitter"
 import LinkedIn from "@auth/core/providers/linkedin"
@@ -6,6 +8,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter"
 import { prisma } from "@/lib/prisma"
 
 export const { auth, handlers, signIn, signOut } = NextAuth({
+    debug: true,
     adapter: PrismaAdapter(prisma),
     session: {
         strategy: "jwt",
@@ -28,10 +31,27 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
             clientId: process.env.LINKEDIN_CLIENT_ID,
             clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
             authorization: {
+                url: "https://www.linkedin.com/oauth/v2/authorization",
                 params: {
                     scope: "openid profile email w_member_social",
+                    response_type: "code",
                 },
             },
+            token: {
+                url: "https://www.linkedin.com/oauth/v2/accessToken",
+            },
+            userinfo: {
+                url: "https://api.linkedin.com/v2/userinfo",
+            },
+            // Ensure we use the OIDC mapping since we are asking for openid scope
+            profile(profile) {
+                return {
+                    id: profile.sub,
+                    name: profile.name,
+                    email: profile.email,
+                    image: profile.picture,
+                }
+            }
         }),
     ],
     callbacks: {
@@ -46,7 +66,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
             // For Twitter/LinkedIn, link to existing user
             if (account.provider === "twitter" || account.provider === "linkedin") {
                 try {
-                    const existingUser = await prisma.user.findFirst({
+                    let existingUser = await prisma.user.findFirst({
                         where: {
                             OR: [
                                 { email: user.email ?? undefined },
@@ -54,6 +74,43 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
                             ],
                         },
                     });
+
+                    // If no user found by email, try to find by session (account linking)
+                    if (!existingUser) {
+                        const cookieStore = await cookies();
+                        // Try both secure and non-secure cookie names
+                        const sessionToken = cookieStore.get("authjs.session-token")?.value ||
+                            cookieStore.get("__Secure-authjs.session-token")?.value;
+
+                        console.log("[DEBUG] Session Token found:", !!sessionToken);
+                        console.log("[DEBUG] Cookie names:", cookieStore.getAll().map(c => c.name));
+
+                        if (sessionToken) {
+                            try {
+                                const decoded = await decode({
+                                    token: sessionToken,
+                                    secret: process.env.AUTH_SECRET!,
+                                    salt: sessionToken.includes("__Secure") ? "__Secure-authjs.session-token" : "authjs.session-token",
+                                });
+                                console.log("[DEBUG] Decoded token sub:", decoded?.sub);
+
+                                if (decoded?.sub) {
+                                    const userBySession = await prisma.user.findUnique({
+                                        where: { id: decoded.sub },
+                                    });
+
+                                    if (userBySession) {
+                                        console.log("[DEBUG] Found user by session:", userBySession.id);
+                                        // Found the user! We should link to this one.
+                                        // @ts-expect-error - mutation
+                                        existingUser = userBySession;
+                                    }
+                                }
+                            } catch (e) {
+                                console.error("[DEBUG] Failed to decode session:", e);
+                            }
+                        }
+                    }
 
                     if (existingUser) {
                         const existingAccount = await prisma.account.findUnique({
@@ -113,6 +170,11 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
                 token.userId = user?.id;
             }
 
+            // Ensure userId is available if not set above (e.g. from existing token)
+            if (!token.userId && token.sub) {
+                token.userId = token.sub;
+            }
+
             if (account?.provider === "twitter") {
                 token.xAccessToken = account.access_token;
                 token.xRefreshToken = account.refresh_token;
@@ -135,9 +197,11 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
                 if (githubAccount?.access_token) {
                     token.accessToken = githubAccount.access_token;
                     token.githubAccessToken = githubAccount.access_token;
-                    console.log("✅ Restored GitHub token from database");
                 }
             }
+
+            // ... rest of restoration logic
+
 
             // Restore Twitter token status from database if not set
             if (!token.xAccountLinked && token.userId) {
@@ -171,6 +235,10 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
         },
 
         async session({ session, token }) {
+            if (session.user) {
+                session.user.id = (token.userId as string) || (token.sub as string);
+            }
+
             // @ts-expect-error - custom session properties
             session.accessToken = token.accessToken || token.githubAccessToken;
             // @ts-expect-error - custom session properties

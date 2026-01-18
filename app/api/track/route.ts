@@ -187,65 +187,129 @@ export async function GET(request: Request) {
     }
 }
 
+
+
 export async function POST(request: Request) {
+    const session = await auth();
+
+    const accessToken = (session as { accessToken?: string })?.accessToken;
+    const userId = session?.user?.id;
+
+    if (!accessToken || !userId) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     try {
-        const session = await auth();
-        
-        if (!session?.user) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        const { repoFullName, tracked, config } = await request.json() as {
+            repoFullName: string;
+            tracked: boolean;
+            config?: TrackingConfig;
+        };
+
+        if (!repoFullName || typeof tracked !== "boolean") {
+            return NextResponse.json(
+                { error: "Invalid request body" },
+                { status: 400 }
+            );
         }
 
-        // Get userId from session - this comes from the JWT callback
-        // @ts-expect-error - custom session property
-        const userId = session.userId;
-        // @ts-expect-error - custom session property  
-        const accessToken = session.accessToken;
+        if (tracked) {
+            try {
+                // Create webhook
+                await createWebhook(repoFullName, accessToken);
+            } catch (error) {
+                console.error("Error creating webhook:", error);
+                const errorMsg = error instanceof Error ? error.message : "Failed to create webhook";
+                throw new Error(`Webhook creation failed: ${errorMsg}`);
+            }
 
-        console.log("📍 Track API - userId:", userId);
-        console.log("📍 Track API - accessToken exists:", !!accessToken);
+            try {
+                // Get LinkedIn token from Account table if enabled
+                let linkedInToken: string | null = null;
 
-        if (!accessToken) {
-            return NextResponse.json({ error: "No access token" }, { status: 401 });
+                if (config?.postToLinkedIn) {
+                    const linkedInAccount = await prisma.account.findFirst({
+                        where: {
+                            userId: userId,
+                            provider: "linkedin"
+                        }
+                    });
+
+                    if (linkedInAccount?.access_token) {
+                        linkedInToken = linkedInAccount.access_token;
+                    } else {
+                        console.warn(`[WARN] LinkedIn posting enabled but no token found for user ${userId}`);
+                    }
+                }
+
+                // Store in database with config and userId
+                await prisma.trackedRepo.upsert({
+                    where: { repoName: repoFullName },
+                    update: {
+                        accessToken: accessToken,
+                        userId: userId,
+                        postToLinkedIn: config?.postToLinkedIn ?? false,
+                        postToTwitter: config?.postToTwitter ?? false,
+                        yoloMode: config?.yoloMode ?? false,
+                        revertCommit: config?.revertCommit ?? false,
+                        timerMinutes: config?.timerMinutes ?? 30,
+                        linkedInToken: linkedInToken,
+                    },
+                    create: {
+                        repoName: repoFullName,
+                        accessToken: accessToken,
+                        userId: userId,
+                        postToLinkedIn: config?.postToLinkedIn ?? false,
+                        postToTwitter: config?.postToTwitter ?? false,
+                        yoloMode: config?.yoloMode ?? false,
+                        revertCommit: config?.revertCommit ?? false,
+                        timerMinutes: config?.timerMinutes ?? 30,
+                        linkedInToken: linkedInToken,
+                    },
+                });
+            } catch (error) {
+                console.error("Error storing in database:", error);
+                const errorMsg = error instanceof Error ? error.message : "Database operation failed";
+                throw new Error(`Database error: ${errorMsg}`);
+            }
+
+            try {
+                // Install the GitHub Actions workflow
+                await installWatchdog(repoFullName, accessToken);
+            } catch (error) {
+                console.error("Error installing workflow:", error);
+                const errorMsg = error instanceof Error ? error.message : "Failed to install workflow";
+                // Don't fail the whole request if workflow install fails (it might already exist)
+                console.warn(`Workflow installation warning: ${errorMsg}`);
+            }
+        } else {
+            // Remove from database
+            await prisma.trackedRepo
+                .delete({ where: { repoName: repoFullName } })
+                .catch(() => { });
+
+            // Delete webhook and workflow
+            try {
+                await deleteWebhook(repoFullName, accessToken);
+            } catch (error) {
+                console.error("Error deleting webhook:", error);
+                // Continue even if webhook deletion fails
+            }
+
+            try {
+                await deleteWorkflow(repoFullName, accessToken);
+            } catch (error) {
+                console.error("Error deleting workflow:", error);
+                // Continue even if workflow deletion fails
+            }
         }
 
-        const body = await request.json();
-        const { repoFullName, config } = body;
-
-        if (!repoFullName) {
-            return NextResponse.json({ error: "Repository name required" }, { status: 400 });
-        }
-
-        // Upsert the tracked repo WITH userId
-        const trackedRepo = await prisma.trackedRepo.upsert({
-            where: { repoName: repoFullName },
-            update: {
-                accessToken: accessToken,
-                userId: userId, // Store the user ID
-                postToLinkedIn: config?.postToLinkedIn ?? false,
-                postToTwitter: config?.postToTwitter ?? false,
-                yoloMode: config?.yoloMode ?? false,
-                revertCommit: config?.revertCommit ?? false,
-                timerMinutes: config?.timerMinutes ?? 30,
-            },
-            create: {
-                repoName: repoFullName,
-                accessToken: accessToken,
-                userId: userId, // Store the user ID
-                postToLinkedIn: config?.postToLinkedIn ?? false,
-                postToTwitter: config?.postToTwitter ?? false,
-                yoloMode: config?.yoloMode ?? false,
-                revertCommit: config?.revertCommit ?? false,
-                timerMinutes: config?.timerMinutes ?? 30,
-            },
-        });
-
-        console.log("✅ TrackedRepo saved with userId:", trackedRepo.userId);
-
-        return NextResponse.json({ success: true, repo: trackedRepo });
+        return NextResponse.json({ success: true, tracked });
     } catch (error) {
-        console.error("Track API error:", error);
+        console.error("Error updating tracking:", error);
+        const errorMessage = error instanceof Error ? error.message : "Failed to update tracking";
         return NextResponse.json(
-            { error: "Failed to track repository" },
+            { error: errorMessage },
             { status: 500 }
         );
     }
