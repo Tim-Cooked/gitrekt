@@ -37,7 +37,7 @@ export function UserProfileDropdown({ user }: { user: User }) {
         <div className="relative" ref={dropdownRef}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/10 transition-all duration-200"
+                className="flex items-center gap-3 px-4 py-2 bg-white border-4 border-black shadow-neo-sm hover:shadow-neo-md active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-100"
             >
                 {user.image && (
                     <div className="relative">
@@ -46,37 +46,37 @@ export function UserProfileDropdown({ user }: { user: User }) {
                             alt={user.name ?? "User Avatar"}
                             width={32}
                             height={32}
-                            className="rounded-full border-2 border-purple-400/50 shadow-lg shadow-purple-500/20"
+                            className="border-2 border-black"
                         />
                     </div>
                 )}
                 {user.name && (
-                    <span className="text-white/90 font-medium text-sm tracking-wide hidden sm:block">
+                    <span className="text-black font-black text-sm uppercase tracking-wide hidden sm:block">
                         {user.name}
                     </span>
                 )}
-                <ChevronDown className={`w-4 h-4 text-white/70 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+                <ChevronDown className={`w-4 h-4 text-black transition-transform duration-100 ${isOpen ? "rotate-180" : ""}`} />
             </button>
 
             {isOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-gray-900 border border-white/10 rounded-xl shadow-xl shadow-black/20 overflow-hidden z-50">
+                <div className="absolute right-0 mt-2 w-56 bg-white border-4 border-black shadow-neo-md z-50">
                     <button
                         onClick={() => {
                             router.push("/dashboard/settings");
                             setIsOpen(false);
                         }}
-                        className="w-full flex items-center gap-3 px-4 py-3 text-left text-white/90 hover:bg-white/10 transition-colors"
+                        className="w-full flex items-center gap-3 px-4 py-4 text-left text-black hover:bg-neo-secondary transition-colors border-b-4 border-black font-black uppercase tracking-widest text-xs"
                     >
-                        <Settings className="w-4 h-4 text-white/70" />
-                        <span className="text-sm font-medium">Settings</span>
+                        <Settings className="w-4 h-4" />
+                        <span>Settings</span>
                     </button>
                     <form action={signOutAction}>
                         <button
                             type="submit"
-                            className="w-full flex items-center gap-3 px-4 py-3 text-left text-white/90 hover:bg-red-600/20 hover:text-red-400 transition-colors"
+                            className="w-full flex items-center gap-3 px-4 py-4 text-left text-black hover:bg-neo-accent transition-colors font-black uppercase tracking-widest text-xs"
                         >
                             <LogOut className="w-4 h-4" />
-                            <span className="text-sm font-medium">Sign Out</span>
+                            <span>Sign Out</span>
                         </button>
                     </form>
                 </div>
