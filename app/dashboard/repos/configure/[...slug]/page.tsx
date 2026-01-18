@@ -241,6 +241,31 @@ export default function ConfigureTrackingPage({ params }: { params: Promise<{ sl
                         )}
                     </div>
 
+                    {/* Revert Commit */}
+                    <div className={`border-4 border-black p-8 shadow-neo-md transition-all ${
+                        config.revertCommit ? "bg-neo-muted" : "bg-white"
+                    }`}>
+                        <button
+                            onClick={() => setConfig({ ...config, revertCommit: !config.revertCommit })}
+                            className="w-full flex items-center gap-6"
+                        >
+                            <div className={`p-4 border-4 border-black ${config.revertCommit ? "bg-white" : "bg-neo-muted/20"}`}>
+                                <RotateCcw className="w-8 h-8 text-black" />
+                            </div>
+                            <div className="flex-1 text-left">
+                                <p className="text-2xl font-black text-black uppercase tracking-tight">Revert Commit</p>
+                                <p className="text-black font-bold text-lg leading-tight mt-1">
+                                    Automatically revert to the previous successful commit when code fails
+                                </p>
+                            </div>
+                            <div className={`w-8 h-8 border-4 border-black flex items-center justify-center transition-all ${
+                                config.revertCommit ? "bg-neo-accent" : "bg-white"
+                            }`}>
+                                {config.revertCommit && <div className="w-4 h-4 bg-black"></div>}
+                            </div>
+                        </button>
+                    </div>
+
                     {/* YOLO Mode */}
                     <div className={`border-8 border-black p-8 shadow-neo-xl transition-all ${
                         config.yoloMode ? "bg-neo-accent" : "bg-white"
@@ -274,31 +299,6 @@ export default function ConfigureTrackingPage({ params }: { params: Promise<{ sl
                                 </p>
                             </div>
                         )}
-                    </div>
-
-                    {/* Revert Commit */}
-                    <div className={`border-4 border-black p-8 shadow-neo-md transition-all ${
-                        config.revertCommit ? "bg-neo-muted" : "bg-white"
-                    }`}>
-                        <button
-                            onClick={() => setConfig({ ...config, revertCommit: !config.revertCommit })}
-                            className="w-full flex items-center gap-6"
-                        >
-                            <div className={`p-4 border-4 border-black ${config.revertCommit ? "bg-white" : "bg-neo-muted/20"}`}>
-                                <RotateCcw className="w-8 h-8 text-black" />
-                            </div>
-                            <div className="flex-1 text-left">
-                                <p className="text-2xl font-black text-black uppercase tracking-tight">Revert Commit</p>
-                                <p className="text-black font-bold text-lg leading-tight mt-1">
-                                    Automatically revert to the previous successful commit when code fails
-                                </p>
-                            </div>
-                            <div className={`w-8 h-8 border-4 border-black flex items-center justify-center transition-all ${
-                                config.revertCommit ? "bg-neo-accent" : "bg-white"
-                            }`}>
-                                {config.revertCommit && <div className="w-4 h-4 bg-black"></div>}
-                            </div>
-                        </button>
                     </div>
 
                     {/* Error Message */}
