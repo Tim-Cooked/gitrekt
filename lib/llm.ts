@@ -3,15 +3,25 @@ import { GoogleGenAI } from "@google/genai";
 const googleAi = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 async function callGemini(prompt: string): Promise<string> {
-    const response = await googleAi.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt,
-    });
-    const text = response.text;
-    if (typeof text !== "string") {
-        throw new Error("Gemini response missing text");
+    if (!process.env.GEMINI_API_KEY) {
+        console.error("❌ GEMINI_API_KEY environment variable is not set");
+        throw new Error("GEMINI_API_KEY environment variable is not set");
     }
-    return text;
+    
+    try {
+        const response = await googleAi.models.generateContent({
+            model: "gemini-2.5-flash", // Using stable model name
+            contents: prompt,
+        });
+        const text = response.text;
+        if (typeof text !== "string") {
+            throw new Error("Gemini response missing text");
+        }
+        return text;
+    } catch (error) {
+        console.error("❌ Gemini API error:", error);
+        throw error;
+    }
 }
 
 export async function judgeCode(diff: string): Promise<{ pass: boolean; reason: string }> {
@@ -60,9 +70,6 @@ Reply with JSON format: {"pass": true/false, "reason": "brief explanation"}
         console.error("Error judging code:", error);
         // Fail open - don't block on AI errors
         return { pass: true, reason: "AI judgment unavailable" };
-        
-        // For testing
-        // return { pass: false, reason: "You suck"};
     }
 }
 
@@ -94,6 +101,41 @@ Include hashtags like #GitRekt #BadCode #Oops
         return content.trim();
     } catch (error) {
         console.error("Error generating roast:", error);
-        return "Error";
+        return "Error generating roast - AI service unavailable";
+    }
+}
+
+export async function generateLinkedInPost(
+    actor: string,
+    repo: string,
+    commitMessage: string,
+    failReason: string,
+    roast: string
+): Promise<string> {
+    try {
+        const prompt = `
+You are writing a professional but embarrassing LinkedIn post for "GitRekt", a code punishment system.
+
+A developer named "${actor}" committed bad code to repository "${repo}".
+Commit message: "${commitMessage}"
+The code review AI detected: "${failReason}"
+The roast summary: "${roast}"
+
+Write a typical LinkedIn-style professional post that is EMBARRASSING but professional. It should:
+- Start with a relatable professional tone (e.g., "Excited to share a learning moment...")
+- Mention the failure in a way that sounds like a humblebrag but is actually embarrassing
+- Include typical LinkedIn elements: motivation, growth mindset, transparency
+- Be around 150-200 words
+- Include relevant hashtags like #LearningInPublic #GrowthMindset #CodeReview #GitRekt
+- Sound authentic and professional, not obviously satirical
+
+Make it cringeworthy in a way that a real LinkedIn post might be.
+`;
+
+        const content = await callGemini(prompt);
+        return content.trim();
+    } catch (error) {
+        console.error("Error generating LinkedIn post:", error);
+        return `Learning moment: Just had my code rejected by GitRekt's AI judge. Time to level up! 💪 #LearningInPublic #GitRekt`;
     }
 }

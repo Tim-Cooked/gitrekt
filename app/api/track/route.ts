@@ -154,6 +154,7 @@ export async function GET(request: Request) {
                 yoloMode: true,
                 revertCommit: true,
                 timerMinutes: true,
+                createdAt: true,
             },
         });
 
@@ -176,6 +177,7 @@ export async function GET(request: Request) {
                 yoloMode: trackedRepo.yoloMode,
                 revertCommit: trackedRepo.revertCommit,
                 timerMinutes: trackedRepo.timerMinutes,
+                createdAt: trackedRepo.createdAt.toISOString(),
             },
         });
     } catch (error) {
@@ -187,13 +189,15 @@ export async function GET(request: Request) {
     }
 }
 
+
+
 export async function POST(request: Request) {
     const session = await auth();
 
     const accessToken = (session as { accessToken?: string })?.accessToken;
-    const userId = (session as { user?: { id?: string } })?.user?.id;
+    const userId = session?.user?.id;
 
-    if (!accessToken) {
+    if (!accessToken || !userId) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -222,10 +226,28 @@ export async function POST(request: Request) {
             }
 
             try {
-                // Store in database with config
+                // Get LinkedIn token from Account table if enabled
+                let linkedInToken: string | null = null;
+
+                if (config?.postToLinkedIn) {
+                    const linkedInAccount = await prisma.account.findFirst({
+                        where: {
+                            userId: userId,
+                            provider: "linkedin"
+                        }
+                    });
+
+                    if (linkedInAccount?.access_token) {
+                        linkedInToken = linkedInAccount.access_token;
+                    } else {
+                        console.warn(`[WARN] LinkedIn posting enabled but no token found for user ${userId}`);
+                    }
+                }
+
+                // Store in database with config and userId
                 await prisma.trackedRepo.upsert({
                     where: { repoName: repoFullName },
-                    update: { 
+                    update: {
                         accessToken: accessToken,
                         userId: userId,
                         postToLinkedIn: config?.postToLinkedIn ?? false,
@@ -233,9 +255,10 @@ export async function POST(request: Request) {
                         yoloMode: config?.yoloMode ?? false,
                         revertCommit: config?.revertCommit ?? false,
                         timerMinutes: config?.timerMinutes ?? 30,
+                        linkedInToken: linkedInToken,
                     },
-                    create: { 
-                        repoName: repoFullName, 
+                    create: {
+                        repoName: repoFullName,
                         accessToken: accessToken,
                         userId: userId,
                         postToLinkedIn: config?.postToLinkedIn ?? false,
@@ -243,6 +266,7 @@ export async function POST(request: Request) {
                         yoloMode: config?.yoloMode ?? false,
                         revertCommit: config?.revertCommit ?? false,
                         timerMinutes: config?.timerMinutes ?? 30,
+                        linkedInToken: linkedInToken,
                     },
                 });
             } catch (error) {
@@ -257,13 +281,14 @@ export async function POST(request: Request) {
             } catch (error) {
                 console.error("Error installing workflow:", error);
                 const errorMsg = error instanceof Error ? error.message : "Failed to install workflow";
-                throw new Error(`Workflow installation failed: ${errorMsg}`);
+                // Don't fail the whole request if workflow install fails (it might already exist)
+                console.warn(`Workflow installation warning: ${errorMsg}`);
             }
         } else {
             // Remove from database
             await prisma.trackedRepo
                 .delete({ where: { repoName: repoFullName } })
-                .catch(() => {});
+                .catch(() => { });
 
             // Delete webhook and workflow
             try {

@@ -17,6 +17,7 @@ interface Commit {
         avatar: string | null;
     };
     url: string;
+    deleted?: boolean; // True if commit was deleted (reverted/force-pushed)
 }
 
 interface RoastEvent {
@@ -30,6 +31,7 @@ interface RoastEvent {
     posted: boolean;
     fixed: boolean;
     createdAt: string;
+    commitDate: string | null; // When the commit was actually made
 }
 
 function CountdownTimer({ deadline, posted, fixed }: { deadline: string; posted: boolean; fixed: boolean }) {
@@ -104,7 +106,7 @@ export default function RepoHistoryPage({ params }: { params: Promise<{ slug: st
     const [roasts, setRoasts] = useState<RoastEvent[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [trackingConfig, setTrackingConfig] = useState<{ postToLinkedIn: boolean; postToTwitter: boolean; yoloMode: boolean; revertCommit: boolean } | null>(null);
+    const [trackingConfig, setTrackingConfig] = useState<{ postToLinkedIn: boolean; postToTwitter: boolean; yoloMode: boolean; revertCommit: boolean; createdAt?: string } | null>(null);
 
     const repoFullName = resolvedParams.slug.join("/");
     const [owner, repo] = resolvedParams.slug;
@@ -124,16 +126,42 @@ export default function RepoHistoryPage({ params }: { params: Promise<{ slug: st
                     throw new Error(errorData.error || `HTTP ${commitsRes.status}`);
                 }
                 const commitsData = await commitsRes.json();
-                setCommits(commitsData.commits || []);
+                const fetchedCommits: Commit[] = commitsData.commits || [];
+                const commitShaSet = new Set(fetchedCommits.map(c => c.sha));
 
                 // Fetch roasts for this repo
                 const roastsRes = await fetch(`/api/roasts/${repoFullName}`, {
                     credentials: "include",
                 });
+                let fetchedRoasts: RoastEvent[] = [];
                 if (roastsRes.ok) {
                     const roastsData = await roastsRes.json();
-                    setRoasts(roastsData.roasts || []);
+                    fetchedRoasts = roastsData.roasts || [];
                 }
+                setRoasts(fetchedRoasts);
+
+                // Find deleted commits (roasts with commitSha not in commits list)
+                const deletedCommits: Commit[] = fetchedRoasts
+                    .filter(roast => roast.commitSha && !commitShaSet.has(roast.commitSha))
+                    .map(roast => ({
+                        sha: roast.commitSha!,
+                        message: roast.commitMessage,
+                        author: {
+                            name: roast.actor,
+                            email: "",
+                            // Use commitDate if available, otherwise fall back to createdAt
+                            date: roast.commitDate || roast.createdAt,
+                            avatar: null,
+                        },
+                        url: `https://github.com/${repoFullName}/commit/${roast.commitSha}`,
+                        deleted: true,
+                    }));
+
+                // Combine all commits and sort by date (newest first)
+                const allCommits = [...fetchedCommits, ...deletedCommits].sort((a, b) => {
+                    return new Date(b.author.date).getTime() - new Date(a.author.date).getTime();
+                });
+                setCommits(allCommits);
 
                 // Fetch tracking config for this repo
                 const configRes = await fetch(`/api/track?repoFullName=${encodeURIComponent(repoFullName)}`, {
@@ -155,6 +183,46 @@ export default function RepoHistoryPage({ params }: { params: Promise<{ slug: st
 
         fetchData();
     }, [repoFullName]);
+    
+    // Poll for updates if there are commits being evaluated
+    useEffect(() => {
+        if (!trackingConfig || !trackingConfig.createdAt) return;
+        
+        const roastMap = new Map(roasts.map((r) => [r.commitSha, r]));
+        const trackingStartDate = new Date(trackingConfig.createdAt);
+        
+        // Check if any commits are being evaluated
+        const hasEvaluatingCommits = commits.some(commit => {
+            const commitDate = new Date(commit.author.date);
+            if (commitDate < trackingStartDate) return false;
+            
+            const roast = roastMap.get(commit.sha);
+            // If there's no roast record, it's being evaluated
+            return !roast;
+        });
+        
+        if (!hasEvaluatingCommits) return;
+        
+        // Poll every 3 seconds while there are evaluating commits
+        const pollInterval = setInterval(() => {
+            async function refreshData() {
+                try {
+                    const roastsRes = await fetch(`/api/roasts/${repoFullName}`, {
+                        credentials: "include",
+                    });
+                    if (roastsRes.ok) {
+                        const roastsData = await roastsRes.json();
+                        setRoasts(roastsData.roasts || []);
+                    }
+                } catch (err) {
+                    console.error("Failed to refresh roasts:", err);
+                }
+            }
+            refreshData();
+        }, 3000);
+        
+        return () => clearInterval(pollInterval);
+    }, [commits, roasts, trackingConfig, repoFullName]);
 
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
@@ -171,6 +239,52 @@ export default function RepoHistoryPage({ params }: { params: Promise<{ slug: st
 
     const isGitRektCommit = (message: string): boolean => {
         return GITREKT_COMMIT_MESSAGES.some((msg) => message.startsWith(msg));
+    };
+
+    const getCommitStatus = (commit: Commit, roast: RoastEvent | undefined): "untracked" | "success" | "failure" | "evaluating" => {
+        // If no tracking config, all commits are untracked
+        if (!trackingConfig || !trackingConfig.createdAt) {
+            return "untracked";
+        }
+
+        const commitDate = new Date(commit.author.date);
+        const trackingStartDate = new Date(trackingConfig.createdAt);
+
+        // If commit was made before tracking started, it's untracked
+        if (commitDate < trackingStartDate) {
+            return "untracked";
+        }
+
+        // If there's a judgment record (roast)
+        if (roast) {
+            // If fixed = true, it's a success (either passed judgment or fixed in time)
+            // If fixed = false, it's a failure (judged and failed)
+            return roast.fixed ? "success" : "failure";
+        }
+
+        // No judgment record means it's currently being evaluated by the AI
+        return "evaluating";
+    };
+
+    const getStatusBadge = (status: "untracked" | "success" | "failure" | "evaluating") => {
+        switch (status) {
+            case "untracked":
+                return (
+                    <span className="text-white/40 text-sm font-medium">UNTRACKED BY GITREKT</span>
+                );
+            case "evaluating":
+                return (
+                    <span className="text-yellow-400 text-sm font-medium">EVALUATING</span>
+                );
+            case "success":
+                return (
+                    <span className="text-green-400 text-sm font-medium">SUCCESSFUL</span>
+                );
+            case "failure":
+                return (
+                    <span className="text-red-400 text-sm font-medium">FAILURE</span>
+                );
+        }
     };
 
     return (
@@ -287,6 +401,9 @@ export default function RepoHistoryPage({ params }: { params: Promise<{ slug: st
                             const roast = roastMap.get(commit.sha);
                             const hasRoast = !!roast;
                             const isGitRekt = isGitRektCommit(commit.message);
+                            const commitStatus = getCommitStatus(commit, roast);
+
+                            const isDeleted = commit.deleted;
 
                             return (
                                 <div
@@ -294,6 +411,8 @@ export default function RepoHistoryPage({ params }: { params: Promise<{ slug: st
                                     className={`border rounded-xl transition-all duration-200 ${
                                         isGitRekt
                                             ? "bg-white/3 border-white/5 p-3 opacity-90"
+                                            : isDeleted
+                                            ? "bg-gray-900/50 border-gray-600/50 hover:border-gray-500/70 p-5 opacity-75"
                                             : hasRoast
                                             ? "bg-white/5 border-red-500/50 hover:border-red-400/70 p-5"
                                             : "bg-white/5 border-white/10 hover:bg-white/10 hover:border-purple-500/50 p-5"
@@ -301,35 +420,40 @@ export default function RepoHistoryPage({ params }: { params: Promise<{ slug: st
                                 >
                                     {isGitRekt ? (
                                         // Single row layout for GitRekt commits
-                                        <div className="flex items-center gap-3 flex-wrap text-xs text-white/30">
-                                            <p className="text-white/40 font-normal shrink-0">
-                                                {commit.message.split("\n")[0]}
-                                            </p>
-                                            <span className="text-white/20">•</span>
-                                            <div className="flex items-center gap-1.5">
-                                                <User className="w-3 h-3" />
-                                                <span>{commit.author.name}</span>
+                                        <div className="flex items-center justify-between gap-3 flex-wrap text-xs text-white/30">
+                                            <div className="flex items-center gap-3 flex-wrap">
+                                                <p className="text-white/40 font-normal shrink-0">
+                                                    {commit.message.split("\n")[0]}
+                                                </p>
+                                                <span className="text-white/20">•</span>
+                                                <div className="flex items-center gap-1.5">
+                                                    <User className="w-3 h-3" />
+                                                    <span>{commit.author.name}</span>
+                                                </div>
+                                                <span className="text-white/20">•</span>
+                                                <div className="flex items-center gap-1.5">
+                                                    <Calendar className="w-3 h-3" />
+                                                    <span>{formatDate(commit.author.date)}</span>
+                                                </div>
+                                                <span className="text-white/20">•</span>
+                                                <a
+                                                    href={commit.url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="font-mono text-purple-400/30 hover:text-purple-400/40 transition-colors"
+                                                >
+                                                    {getShortSha(commit.sha)}
+                                                </a>
                                             </div>
-                                            <span className="text-white/20">•</span>
-                                            <div className="flex items-center gap-1.5">
-                                                <Calendar className="w-3 h-3" />
-                                                <span>{formatDate(commit.author.date)}</span>
-                                            </div>
-                                            <span className="text-white/20">•</span>
-                                            <a
-                                                href={commit.url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="font-mono text-purple-400/30 hover:text-purple-400/40 transition-colors"
-                                            >
-                                                {getShortSha(commit.sha)}
-                                            </a>
+                                            {!isGitRekt && getStatusBadge(commitStatus)}
                                         </div>
                                     ) : (
                                         // Normal layout for user commits
                                         <div className="flex items-start gap-4">
                                             <div className="shrink-0 mt-1">
-                                                <div className="w-10 h-10 rounded-full bg-linear-to-br from-purple-600 to-pink-600 flex items-center justify-center text-white font-mono text-xs font-bold">
+                                                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-mono text-xs font-bold ${
+                                                    isDeleted ? "bg-gray-700" : "bg-linear-to-br from-purple-600 to-pink-600"
+                                                }`}>
                                                     {commit.author.avatar ? (
                                                         <Image
                                                             src={commit.author.avatar}
@@ -346,15 +470,24 @@ export default function RepoHistoryPage({ params }: { params: Promise<{ slug: st
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-start justify-between gap-4 mb-2">
                                                     <div className="flex-1 min-w-0">
-                                                        <div className="flex items-center gap-2">
-                                                            <p className="text-white font-medium mb-1 wrap-break-word">
+                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                            <p className={`font-medium mb-1 wrap-break-word ${
+                                                                isDeleted ? "text-gray-400 line-through" : "text-white"
+                                                            }`}>
                                                                 {commit.message.split("\n")[0]}
                                                             </p>
-                                                            {hasRoast && (
+                                                            {isDeleted && (
+                                                                <span className="px-2 py-0.5 bg-orange-900/50 border border-orange-700/50 rounded text-xs text-orange-300 font-medium">
+                                                                    {roast && !roast.fixed && trackingConfig?.revertCommit ? "REVERTED BY GITREKT" : "DELETED"}
+                                                                </span>
+                                                            )}
+                                                            {hasRoast && !isDeleted && (
                                                                 <Flame className="w-5 h-5 text-red-500 shrink-0" />
                                                             )}
                                                         </div>
-                                                        <div className="flex items-center gap-4 text-sm text-white/60 flex-wrap">
+                                                        <div className={`flex items-center gap-4 text-sm flex-wrap ${
+                                                            isDeleted ? "text-gray-500" : "text-white/60"
+                                                        }`}>
                                                             <div className="flex items-center gap-1.5">
                                                                 <User className="w-4 h-4" />
                                                                 <span>{commit.author.name}</span>
@@ -367,11 +500,18 @@ export default function RepoHistoryPage({ params }: { params: Promise<{ slug: st
                                                                 href={commit.url}
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
-                                                                className="font-mono text-purple-300 hover:text-purple-200 transition-colors"
+                                                                className={`font-mono transition-colors ${
+                                                                    isDeleted 
+                                                                        ? "text-gray-500 hover:text-gray-400" 
+                                                                        : "text-purple-300 hover:text-purple-200"
+                                                                }`}
                                                             >
                                                                 {getShortSha(commit.sha)}
                                                             </a>
                                                         </div>
+                                                    </div>
+                                                    <div className="shrink-0">
+                                                        {getStatusBadge(commitStatus)}
                                                     </div>
                                                 </div>
 

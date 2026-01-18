@@ -29,6 +29,7 @@ export interface CommitInfo {
     author: string;
     message: string;
     branch?: string;
+    date?: string; // Commit date from GitHub API
 }
 
 export async function getCommitInfo(
@@ -50,6 +51,7 @@ export async function getCommitInfo(
         return {
             author: data.author?.login || data.commit?.author?.name || "unknown",
             message: data.commit?.message || "No message",
+            date: data.commit?.author?.date || data.commit?.committer?.date || undefined,
         };
     } catch (error) {
         console.error("Failed to get commit info:", error);
@@ -100,7 +102,7 @@ export async function createWebhook(
         body: JSON.stringify({
             name: "web",
             active: true,
-            events: ["workflow_run", "repository"],
+            events: ["push", "workflow_run", "repository"],
             config: {
                 url: webhookUrl,
                 content_type: "json",

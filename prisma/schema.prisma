@@ -88,6 +88,7 @@ model Event {
   actor         String
   commitMessage String
   commitSha     String?
+  commitDate    DateTime? // When the commit was actually made (from GitHub API)
   diffSummary   String?
   roast         String
   failReason    String?
@@ -116,4 +117,18 @@ model PendingRoast {
   expiresAt     DateTime // 15 minutes from creation
   createdAt     DateTime  @default(now())
   resolvedAt    DateTime?
+}
+
+model UserSession {
+  id            String   @id @default(cuid())
+  githubId      String   @unique // GitHub user ID
+  email         String?  @unique
+  name          String?
+  image         String?
+  githubToken   String   // GitHub access token
+  linkedInToken String?
+  twitterToken  String?
+  twitterSecret String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
