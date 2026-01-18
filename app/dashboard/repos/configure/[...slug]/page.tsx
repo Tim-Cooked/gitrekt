@@ -2,7 +2,7 @@
 
 import { useState, use, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Linkedin, Twitter, Skull, Clock, Shield, AlertTriangle, RotateCcw } from "lucide-react";
+import { ArrowLeft, Linkedin, Twitter, Skull, Clock, Shield, AlertTriangle, RotateCcw, Loader2 } from "lucide-react";
 
 interface ConfigFormData {
     postToLinkedIn: boolean;
@@ -102,42 +102,45 @@ export default function ConfigureTrackingPage({ params }: { params: Promise<{ sl
     ];
 
     return (
-        <div className="min-h-screen bg-linear-to-br from-indigo-950 via-purple-900 to-pink-900">
+        <div className="min-h-screen bg-background">
             {/* Header */}
-            <header className="border-b border-white/10 bg-linear-to-r from-indigo-950/50 to-purple-900/50 backdrop-blur-sm">
-                <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                    <div className="flex items-center gap-4">
+            <header className="border-b-8 border-black bg-white shadow-neo-sm">
+                <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                    <div className="flex items-center gap-6">
                         <button
                             onClick={() => router.push("/dashboard")}
-                            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                            className="p-3 bg-white border-4 border-black shadow-neo-xs hover:shadow-neo-sm hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all"
                         >
-                            <ArrowLeft className="w-5 h-5 text-white/70" />
+                            <ArrowLeft className="w-6 h-6 text-black stroke-[3px]" />
                         </button>
                         <div>
-                            <h1 className="text-2xl font-bold bg-linear-to-r from-pink-400 via-purple-400 to-blue-400 bg-clip-text text-transparent">
-                                Configure Tracking
-                            </h1>
-                            <p className="text-sm text-white/60">{repo}</p>
+                            <div className="bg-neo-secondary border-4 border-black px-4 py-1 -rotate-1 shadow-neo-xs inline-block mb-1">
+                                <h1 className="text-2xl font-black text-black uppercase tracking-tight">
+                                    Configure Tracking
+                                </h1>
+                            </div>
+                            <p className="text-sm text-black font-black uppercase tracking-widest opacity-60 ml-1">{repo}</p>
                         </div>
                     </div>
                 </div>
             </header>
 
             {/* Main Content */}
-            <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                 {loadingConfig ? (
-                    <div className="flex items-center justify-center py-20">
-                        <div className="text-white/70">Loading configuration...</div>
+                    <div className="flex flex-col items-center justify-center py-20 bg-white border-4 border-black shadow-neo-md">
+                        <Loader2 className="w-12 h-12 text-neo-accent animate-spin stroke-[4px]" />
+                        <span className="mt-4 text-black font-black uppercase tracking-widest">Loading Chamber...</span>
                     </div>
                 ) : (
-                <div className="space-y-8">
+                <div className="space-y-10">
                     {/* Info Banner */}
-                    <div className="bg-purple-500/20 border border-purple-500/30 rounded-xl p-4">
-                        <div className="flex items-start gap-3">
-                            <Shield className="w-5 h-5 text-purple-300 mt-0.5" />
+                    <div className="bg-neo-muted border-4 border-black p-6 shadow-neo-sm rotate-1">
+                        <div className="flex items-start gap-4">
+                            <Shield className="w-8 h-8 text-black stroke-[3px]" />
                             <div>
-                                <p className="text-purple-200 font-medium">How it works</p>
-                                <p className="text-purple-200/70 text-sm mt-1">
+                                <p className="text-black font-black uppercase tracking-tight text-xl">How it works</p>
+                                <p className="text-black font-bold text-lg leading-tight mt-2">
                                     When you push bad code, GitRekt will roast you and start a timer. 
                                     Fix your code before the timer runs out, or face the consequences!
                                 </p>
@@ -146,25 +149,25 @@ export default function ConfigureTrackingPage({ params }: { params: Promise<{ sl
                     </div>
 
                     {/* Timer Setting */}
-                    <div className="bg-white/5 border border-white/10 rounded-xl p-6">
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="p-2 bg-blue-500/20 rounded-lg">
-                                <Clock className="w-5 h-5 text-blue-300" />
+                    <div className="bg-white border-4 border-black p-8 shadow-neo-md">
+                        <div className="flex items-center gap-4 mb-8">
+                            <div className="p-3 bg-neo-secondary border-4 border-black">
+                                <Clock className="w-6 h-6 text-black" />
                             </div>
                             <div>
-                                <h3 className="text-white font-semibold">Fix Timer</h3>
-                                <p className="text-white/60 text-sm">How long do you have to fix your mistakes?</p>
+                                <h3 className="text-2xl font-black text-black uppercase tracking-tight">Fix Timer</h3>
+                                <p className="text-black font-bold uppercase tracking-widest text-xs opacity-60">How long do you have to fix your mistakes?</p>
                             </div>
                         </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                             {timerOptions.map((option) => (
                                 <button
                                     key={option.value}
                                     onClick={() => setConfig({ ...config, timerMinutes: option.value })}
-                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                                    className={`px-4 py-4 border-4 border-black font-black text-sm uppercase tracking-widest transition-all ${
                                         config.timerMinutes === option.value
-                                            ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30"
-                                            : "bg-white/5 text-white/70 hover:bg-white/10"
+                                            ? "bg-neo-accent text-black shadow-neo-sm -translate-y-1 -translate-x-1"
+                                            : "bg-white text-black hover:bg-neo-muted"
                                     }`}
                                 >
                                     {option.label}
@@ -174,194 +177,169 @@ export default function ConfigureTrackingPage({ params }: { params: Promise<{ sl
                     </div>
 
                     {/* Social Media Options */}
-                    <div className="bg-white/5 border border-white/10 rounded-xl p-6">
-                        <h3 className="text-white font-semibold mb-4">Public Shame Platforms</h3>
-                        <p className="text-white/60 text-sm mb-6">
+                    <div className="bg-white border-4 border-black p-8 shadow-neo-md">
+                        <h3 className="text-2xl font-black text-black uppercase tracking-tight mb-2">Public Shame Platforms</h3>
+                        <p className="text-black font-bold uppercase tracking-widest text-xs opacity-60 mb-8">
                             If you don&apos;t fix your code in time, your roast will be posted to:
                         </p>
                         
-                        <div className="space-y-3">
+                        <div className="grid grid-cols-1 gap-6">
                             {/* LinkedIn */}
                             <button
                                 onClick={() => setConfig({ ...config, postToLinkedIn: !config.postToLinkedIn })}
-                                className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all ${
+                                className={`flex items-center gap-6 p-6 border-4 border-black transition-all ${
                                     config.postToLinkedIn
-                                        ? "bg-blue-600/20 border-blue-500/50"
-                                        : "bg-white/5 border-white/10 hover:border-white/20"
+                                        ? "bg-neo-muted shadow-neo-sm -translate-y-1 -translate-x-1"
+                                        : "bg-white hover:bg-neo-muted/30"
                                 }`}
                             >
-                                <div className={`p-2 rounded-lg ${config.postToLinkedIn ? "bg-blue-600" : "bg-white/10"}`}>
-                                    <Linkedin className="w-5 h-5 text-white" />
+                                <div className={`p-4 border-4 border-black ${config.postToLinkedIn ? "bg-white" : "bg-neo-muted/20"}`}>
+                                    <Linkedin className="w-8 h-8 text-black" />
                                 </div>
                                 <div className="flex-1 text-left">
-                                    <p className="text-white font-medium">LinkedIn</p>
-                                    <p className="text-white/60 text-sm">Share your shame with your professional network</p>
+                                    <p className="text-xl font-black text-black uppercase tracking-tight">LinkedIn</p>
+                                    <p className="text-black font-bold text-sm leading-tight opacity-70">Share your shame with your professional network</p>
                                 </div>
-                                <div className={`w-5 h-5 rounded-full border-2 transition-all ${
-                                    config.postToLinkedIn 
-                                        ? "bg-blue-500 border-blue-500" 
-                                        : "border-white/30"
+                                <div className={`w-8 h-8 border-4 border-black flex items-center justify-center transition-all ${
+                                    config.postToLinkedIn ? "bg-neo-accent" : "bg-white"
                                 }`}>
-                                    {config.postToLinkedIn && (
-                                        <svg className="w-full h-full text-white" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                        </svg>
-                                    )}
+                                    {config.postToLinkedIn && <div className="w-4 h-4 bg-black"></div>}
                                 </div>
                             </button>
 
                             {/* Twitter/X */}
                             <button
                                 onClick={() => setConfig({ ...config, postToTwitter: !config.postToTwitter })}
-                                className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all ${
+                                className={`flex items-center gap-6 p-6 border-4 border-black transition-all ${
                                     config.postToTwitter
-                                        ? "bg-gray-600/20 border-gray-500/50"
-                                        : "bg-white/5 border-white/10 hover:border-white/20"
+                                        ? "bg-neo-secondary shadow-neo-sm -translate-y-1 -translate-x-1"
+                                        : "bg-white hover:bg-neo-secondary/30"
                                 }`}
                             >
-                                <div className={`p-2 rounded-lg ${config.postToTwitter ? "bg-gray-800" : "bg-white/10"}`}>
-                                    <Twitter className="w-5 h-5 text-white" />
+                                <div className={`p-4 border-4 border-black ${config.postToTwitter ? "bg-white" : "bg-neo-secondary/20"}`}>
+                                    <Twitter className="w-8 h-8 text-black" />
                                 </div>
                                 <div className="flex-1 text-left">
-                                    <p className="text-white font-medium">X (Twitter)</p>
-                                    <p className="text-white/60 text-sm">Tweet your failures for the world to see</p>
+                                    <p className="text-xl font-black text-black uppercase tracking-tight">X (Twitter)</p>
+                                    <p className="text-black font-bold text-sm leading-tight opacity-70">Tweet your failures for the world to see</p>
                                 </div>
-                                <div className={`w-5 h-5 rounded-full border-2 transition-all ${
-                                    config.postToTwitter 
-                                        ? "bg-gray-700 border-gray-700" 
-                                        : "border-white/30"
+                                <div className={`w-8 h-8 border-4 border-black flex items-center justify-center transition-all ${
+                                    config.postToTwitter ? "bg-neo-accent" : "bg-white"
                                 }`}>
-                                    {config.postToTwitter && (
-                                        <svg className="w-full h-full text-white" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                        </svg>
-                                    )}
+                                    {config.postToTwitter && <div className="w-4 h-4 bg-black"></div>}
                                 </div>
                             </button>
                         </div>
 
                         {(config.postToLinkedIn || config.postToTwitter) && (
-                            <p className="mt-4 text-amber-300/80 text-sm flex items-center gap-2">
-                                <AlertTriangle className="w-4 h-4" />
-                                You&apos;ll need to connect your accounts after tracking
-                            </p>
+                            <div className="mt-8 bg-neo-accent/20 border-2 border-black p-4 flex items-center gap-3">
+                                <AlertTriangle className="w-5 h-5 text-black" />
+                                <p className="text-black font-black uppercase tracking-widest text-[10px]">
+                                    You&apos;ll need to connect your accounts after tracking
+                                </p>
+                            </div>
                         )}
                     </div>
 
                     {/* YOLO Mode */}
-                    <div className={`border rounded-xl p-6 transition-all ${
-                        config.yoloMode 
-                            ? "bg-red-500/20 border-red-500/50" 
-                            : "bg-white/5 border-white/10"
+                    <div className={`border-8 border-black p-8 shadow-neo-xl transition-all ${
+                        config.yoloMode ? "bg-neo-accent" : "bg-white"
                     }`}>
                         <button
                             onClick={() => setConfig({ ...config, yoloMode: !config.yoloMode })}
-                            className="w-full flex items-center gap-4"
+                            className="w-full flex items-center gap-6"
                         >
-                            <div className={`p-2 rounded-lg ${config.yoloMode ? "bg-red-600" : "bg-white/10"}`}>
-                                <Skull className="w-5 h-5 text-white" />
+                            <div className={`p-4 border-4 border-black ${config.yoloMode ? "bg-white" : "bg-neo-accent/20"}`}>
+                                <Skull className="w-10 h-10 text-black" />
                             </div>
                             <div className="flex-1 text-left">
-                                <p className="text-white font-semibold">🔥 YOLO Hardcore Mode 🔥</p>
-                                <p className="text-white/60 text-sm">
+                                <p className="text-3xl font-black text-black uppercase tracking-tighter">YOLO Hardcore Mode</p>
+                                <p className="text-black font-bold text-lg leading-tight mt-1">
                                     Fail to fix in time? Your entire repository gets DELETED. No mercy.
                                 </p>
                             </div>
-                            <div className={`w-5 h-5 rounded-full border-2 transition-all ${
-                                config.yoloMode 
-                                    ? "bg-red-500 border-red-500" 
-                                    : "border-white/30"
+                            <div className={`w-10 h-10 border-4 border-black flex items-center justify-center transition-all ${
+                                config.yoloMode ? "bg-white" : "bg-white/20"
                             }`}>
-                                {config.yoloMode && (
-                                    <svg className="w-full h-full text-white" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                    </svg>
-                                )}
+                                {config.yoloMode && <div className="w-6 h-6 bg-black"></div>}
                             </div>
                         </button>
 
                         {config.yoloMode && (
-                            <div className="mt-4 p-3 bg-red-900/30 rounded-lg border border-red-500/30">
-                                <p className="text-red-200 text-sm font-medium">⚠️ Warning: This is irreversible!</p>
-                                <p className="text-red-200/70 text-sm mt-1">
-                                    If you enable YOLO mode and fail to fix your code in time, 
-                                    GitRekt will permanently delete your repository. Are you sure you want this?
+                            <div className="mt-8 p-6 bg-white border-4 border-black shadow-neo-sm rotate-1">
+                                <p className="text-black font-black uppercase tracking-tight text-xl mb-2">⚠️ Irreversible Consequences</p>
+                                <p className="text-black font-bold text-lg leading-tight">
+                                    If you fail to fix your code in time, 
+                                    GitRekt will permanently delete your repository. Are you sure?
                                 </p>
                             </div>
                         )}
                     </div>
 
                     {/* Revert Commit */}
-                    <div className={`border rounded-xl p-6 transition-all ${
-                        config.revertCommit 
-                            ? "bg-orange-500/20 border-orange-500/50" 
-                            : "bg-white/5 border-white/10"
+                    <div className={`border-4 border-black p-8 shadow-neo-md transition-all ${
+                        config.revertCommit ? "bg-neo-muted" : "bg-white"
                     }`}>
                         <button
                             onClick={() => setConfig({ ...config, revertCommit: !config.revertCommit })}
-                            className="w-full flex items-center gap-4"
+                            className="w-full flex items-center gap-6"
                         >
-                            <div className={`p-2 rounded-lg ${config.revertCommit ? "bg-orange-600" : "bg-white/10"}`}>
-                                <RotateCcw className="w-5 h-5 text-white" />
+                            <div className={`p-4 border-4 border-black ${config.revertCommit ? "bg-white" : "bg-neo-muted/20"}`}>
+                                <RotateCcw className="w-8 h-8 text-black" />
                             </div>
                             <div className="flex-1 text-left">
-                                <p className="text-white font-semibold">↩️ Revert Commit</p>
-                                <p className="text-white/60 text-sm">
+                                <p className="text-2xl font-black text-black uppercase tracking-tight">Revert Commit</p>
+                                <p className="text-black font-bold text-lg leading-tight mt-1">
                                     Automatically revert to the previous successful commit when code fails
                                 </p>
                             </div>
-                            <div className={`w-5 h-5 rounded-full border-2 transition-all ${
-                                config.revertCommit 
-                                    ? "bg-orange-500 border-orange-500" 
-                                    : "border-white/30"
+                            <div className={`w-8 h-8 border-4 border-black flex items-center justify-center transition-all ${
+                                config.revertCommit ? "bg-neo-accent" : "bg-white"
                             }`}>
-                                {config.revertCommit && (
-                                    <svg className="w-full h-full text-white" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                    </svg>
-                                )}
+                                {config.revertCommit && <div className="w-4 h-4 bg-black"></div>}
                             </div>
                         </button>
                     </div>
 
                     {/* Error Message */}
                     {error && (
-                        <div className="bg-red-500/20 border border-red-500/50 text-red-200 px-4 py-3 rounded-lg">
-                            {error}
+                        <div className="bg-neo-accent border-4 border-black text-black px-6 py-4 shadow-neo-sm rotate-1 flex items-center gap-4">
+                            <Skull className="w-8 h-8 stroke-[3px]" />
+                            <span className="font-black uppercase tracking-widest">{error}</span>
                         </div>
                     )}
 
                     {/* YOLO Confirmation Modal */}
                     {showYoloConfirm && (
-                        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-                            <div className="bg-gray-900 border border-red-500/50 rounded-2xl p-6 max-w-md w-full">
-                                <div className="flex items-center gap-3 mb-4">
-                                    <div className="p-3 bg-red-600 rounded-full">
-                                        <Skull className="w-6 h-6 text-white" />
+                        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+                            <div className="bg-white border-8 border-black p-8 max-w-md w-full shadow-neo-xl rotate-1">
+                                <div className="flex items-center gap-6 mb-8">
+                                    <div className="p-4 bg-neo-accent border-4 border-black">
+                                        <Skull className="w-10 h-10 text-black" />
                                     </div>
-                                    <h3 className="text-xl font-bold text-white">Final Warning</h3>
+                                    <h3 className="text-3xl font-black text-black uppercase tracking-tighter leading-none">Death Wish</h3>
                                 </div>
-                                <p className="text-white/80 mb-6">
-                                    You&apos;re about to enable YOLO Hardcore Mode. If you push bad code and don&apos;t fix it within {config.timerMinutes} minutes, your repository <strong className="text-red-400">{repo}</strong> will be permanently deleted.
+                                <p className="text-black font-bold text-lg leading-tight mb-8">
+                                    Bad code and no fix in {config.timerMinutes} minutes means <span className="bg-neo-accent px-1 border-2 border-black font-black">{repo}</span> will be purged from existence.
                                 </p>
-                                <p className="text-red-300 mb-6 font-medium">
-                                    Type &quot;DELETE MY REPO&quot; to confirm:
+                                <p className="text-black font-black uppercase tracking-widest text-[10px] mb-4">
+                                    Type &quot;DELETE MY REPO&quot; to accept your fate:
                                 </p>
                                 <input
                                     type="text"
                                     placeholder="DELETE MY REPO"
-                                    className="w-full px-4 py-2 bg-black/50 border border-red-500/30 rounded-lg text-white mb-4 focus:outline-none focus:border-red-500"
+                                    className="w-full px-4 py-4 bg-white border-4 border-black text-black mb-8 focus:outline-none focus:bg-neo-accent font-black uppercase tracking-widest"
                                     id="yolo-confirm"
                                 />
-                                <div className="flex gap-3">
+                                <div className="flex gap-4">
                                     <button
                                         onClick={() => {
                                             setShowYoloConfirm(false);
                                             setConfig({ ...config, yoloMode: false });
                                         }}
-                                        className="flex-1 px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors"
+                                        className="flex-1 px-6 py-4 bg-white border-4 border-black text-black font-black uppercase tracking-widest text-sm hover:bg-neo-muted transition-all"
                                     >
-                                        Cancel
+                                        ABORT
                                     </button>
                                     <button
                                         onClick={() => {
@@ -371,9 +349,9 @@ export default function ConfigureTrackingPage({ params }: { params: Promise<{ sl
                                                 handleSubmit();
                                             }
                                         }}
-                                        className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-500 transition-colors font-medium"
+                                        className="flex-1 px-6 py-4 bg-neo-accent border-4 border-black text-black font-black uppercase tracking-widest text-sm shadow-neo-sm hover:shadow-neo-md hover:-translate-y-1 active:translate-y-0 active:shadow-none transition-all"
                                     >
-                                        I Accept My Fate
+                                        I ACCEPT
                                     </button>
                                 </div>
                             </div>
@@ -384,9 +362,9 @@ export default function ConfigureTrackingPage({ params }: { params: Promise<{ sl
                     <button
                         onClick={handleSubmit}
                         disabled={loading}
-                        className="w-full py-4 bg-linear-to-r from-purple-600 to-pink-600 text-white font-bold rounded-xl hover:from-purple-500 hover:to-pink-500 transition-all shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full py-6 bg-neo-secondary border-8 border-black text-black font-black uppercase tracking-widest text-2xl shadow-neo-lg hover:shadow-neo-xl hover:-translate-y-2 active:translate-y-0 active:shadow-none transition-all disabled:opacity-50"
                     >
-                        {loading ? "Setting up tracking..." : "Start Tracking"}
+                        {loading ? "PREPARING CHAMBER..." : "START THE RECKONING"}
                     </button>
                 </div>
                 )}

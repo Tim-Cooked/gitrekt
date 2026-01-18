@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { AlertTriangle, Clock, CheckCircle2, XCircle } from "lucide-react";
+import { AlertTriangle, Clock, CheckCircle2, Skull } from "lucide-react";
 import Link from "next/link";
 
 interface PendingRoast {
@@ -121,10 +121,10 @@ export function PendingRoasts() {
 
     if (loading) {
         return (
-            <div className="bg-gradient-to-br from-yellow-600/20 to-orange-600/20 border border-yellow-500/30 rounded-2xl p-6 backdrop-blur-sm shadow-xl">
-                <div className="flex items-center gap-3 mb-4">
-                    <Clock className="w-6 h-6 text-yellow-300 animate-spin" />
-                    <h3 className="text-xl font-semibold text-white">Loading pending roasts...</h3>
+            <div className="bg-white border-4 border-black p-8 shadow-neo-md mb-8">
+                <div className="flex items-center gap-4">
+                    <Clock className="w-8 h-8 text-neo-secondary animate-spin stroke-[3px]" />
+                    <h3 className="text-xl font-black text-black uppercase tracking-tight">Loading pending roasts...</h3>
                 </div>
             </div>
         );
@@ -132,37 +132,41 @@ export function PendingRoasts() {
 
     if (error) {
         return (
-            <div className="bg-gradient-to-br from-red-600/20 to-orange-600/20 border border-red-500/30 rounded-2xl p-6 backdrop-blur-sm shadow-xl">
-                <div className="flex items-center gap-3">
-                    <XCircle className="w-6 h-6 text-red-300" />
-                    <p className="text-white/80">{error}</p>
+            <div className="bg-neo-accent border-4 border-black p-8 shadow-neo-md mb-8 rotate-1">
+                <div className="flex items-center gap-4">
+                    <Skull className="w-8 h-8 text-black stroke-[3px]" />
+                    <p className="text-black font-black uppercase tracking-widest text-sm">{error}</p>
                 </div>
             </div>
         );
     }
 
     if (pendingRoasts.length === 0) {
-        return null; // Don't show anything if there are no pending roasts
+        return null;
     }
 
     return (
-        <div className="space-y-4 mb-8">
-            <div className="bg-gradient-to-br from-yellow-600/20 via-orange-600/15 to-red-600/20 border border-yellow-500/30 rounded-2xl p-6 backdrop-blur-sm shadow-xl shadow-yellow-900/20">
-                <div className="flex items-center gap-3 mb-4">
-                    <div className="p-2 bg-gradient-to-br from-yellow-600/40 to-orange-500/30 rounded-xl shadow-lg">
-                        <AlertTriangle className="w-6 h-6 text-yellow-200" />
+        <div className="space-y-6 mb-12">
+            <div className="bg-neo-secondary border-4 border-black p-8 shadow-neo-md -rotate-1 relative overflow-hidden">
+                <div className="absolute top-[-20px] right-[-20px] opacity-10">
+                    <AlertTriangle className="w-40 h-40 text-black stroke-[10px]" />
+                </div>
+                
+                <div className="flex items-center gap-4 mb-8 relative z-10">
+                    <div className="p-3 bg-white border-4 border-black shadow-neo-xs rotate-3">
+                        <AlertTriangle className="w-8 h-8 text-black stroke-[3px]" />
                     </div>
                     <div className="flex-1">
-                        <h3 className="text-xl font-semibold text-white mb-1 tracking-tight">
-                            Pending Roasts - Fix Your Code!
+                        <h3 className="text-3xl font-black text-black uppercase tracking-tighter">
+                            Pending Roasts
                         </h3>
-                        <p className="text-white/75 text-sm">
-                            You have {pendingRoasts.length} {pendingRoasts.length === 1 ? "error" : "errors"} that will be roasted in:
+                        <p className="text-black font-bold uppercase tracking-widest text-xs opacity-60">
+                            You have {pendingRoasts.length} {pendingRoasts.length === 1 ? "sin" : "sins"} that will be exposed in:
                         </p>
                     </div>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-4 relative z-10">
                     {pendingRoasts.map((roast) => {
                         const isExpiringSoon = roast.timeRemaining < 300; // Less than 5 minutes
                         const isExpired = roast.timeRemaining <= 0;
@@ -170,63 +174,54 @@ export function PendingRoasts() {
                         return (
                             <div
                                 key={roast.id}
-                                className={`bg-white/[0.05] border rounded-xl p-4 transition-all duration-200 ${
-                                    isExpiringSoon
-                                        ? "border-red-500/50 bg-red-500/10 animate-pulse"
-                                        : "border-white/10 hover:border-yellow-500/30"
+                                className={`bg-white border-4 border-black p-6 shadow-neo-sm transition-all ${
+                                    isExpiringSoon ? "bg-neo-accent/10 animate-pulse" : ""
                                 }`}
                             >
-                                <div className="flex items-start justify-between gap-4">
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                <div className="flex flex-col md:flex-row items-start justify-between gap-6">
+                                    <div className="flex-1 min-w-0 space-y-4">
+                                        <div className="flex items-center gap-4 flex-wrap">
                                             <Link
                                                 href={`/dashboard/repos/${roast.repoName}`}
-                                                className="text-white font-semibold hover:text-yellow-300 transition-colors truncate"
+                                                className="text-xl font-black text-black uppercase tracking-tight hover:underline decoration-4"
                                             >
                                                 {roast.repoName}
                                             </Link>
-                                            <span className="text-xs text-white/50 font-mono">
+                                            <span className="bg-black text-white px-2 py-0.5 text-[10px] font-black uppercase tracking-widest">
                                                 {roast.commitSha.substring(0, 7)}
                                             </span>
                                         </div>
-                                        <p className="text-white/80 text-sm mb-2 line-clamp-2">
+                                        <p className="text-black font-bold text-sm leading-tight line-clamp-2">
                                             {roast.commitMessage}
                                         </p>
-                                        {roast.errorDetails && (
-                                            <p className="text-white/60 text-xs mb-2">
-                                                {roast.errorDetails}
-                                            </p>
-                                        )}
-                                        <div className="flex items-center gap-2 text-sm">
-                                            <Clock className={`w-4 h-4 ${isExpiringSoon ? "text-red-400" : "text-yellow-400"}`} />
-                                            <span
-                                                className={`font-semibold ${
-                                                    isExpiringSoon
-                                                        ? "text-red-300"
-                                                        : "text-yellow-300"
-                                                }`}
-                                            >
-                                                {isExpired
-                                                    ? "Time's up! Roast will be posted soon."
-                                                    : `${formatTimeRemaining(roast.timeRemaining)} remaining`}
-                                            </span>
+                                        <div className="flex items-center gap-3">
+                                            <div className={`flex items-center gap-2 px-3 py-1 border-2 border-black font-black uppercase tracking-widest text-[10px] shadow-neo-xs ${
+                                                isExpiringSoon ? "bg-neo-accent" : "bg-white"
+                                            }`}>
+                                                <Clock className="w-3 h-3 text-black" />
+                                                <span className="text-black">
+                                                    {isExpired
+                                                        ? "TIME EXPIRED! POSTING SOON."
+                                                        : formatTimeRemaining(roast.timeRemaining).toUpperCase()}
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="flex flex-col gap-2 shrink-0">
+                                    <div className="flex flex-col gap-3 shrink-0 w-full md:w-auto">
                                         <Link
                                             href={`https://github.com/${roast.repoName}/commit/${roast.commitSha}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="px-4 py-2 rounded-lg bg-white/[0.08] text-white/80 hover:bg-white/[0.15] hover:text-white border border-white/20 hover:border-white/30 transition-all duration-200 text-sm font-medium text-center"
+                                            className="px-6 py-3 bg-white border-4 border-black text-black font-black uppercase tracking-widest text-xs shadow-neo-xs hover:shadow-neo-sm hover:-translate-y-1 transition-all text-center"
                                         >
                                             View Commit
                                         </Link>
                                         <button
                                             onClick={() => resolvePendingRoast(roast.id)}
-                                            className="px-4 py-2 rounded-lg bg-gradient-to-r from-green-600/80 to-green-500/80 text-white hover:from-green-500 hover:to-green-400 border border-green-500/30 hover:border-green-400/50 transition-all duration-200 text-sm font-medium flex items-center justify-center gap-2 shadow-lg shadow-green-500/20"
+                                            className="px-6 py-3 bg-neo-muted border-4 border-black text-black font-black uppercase tracking-widest text-xs shadow-neo-xs hover:shadow-neo-sm hover:-translate-y-1 transition-all flex items-center justify-center gap-2"
                                         >
                                             <CheckCircle2 className="w-4 h-4" />
-                                            Mark Fixed
+                                            Resolve Sin
                                         </button>
                                     </div>
                                 </div>
@@ -235,9 +230,9 @@ export function PendingRoasts() {
                     })}
                 </div>
 
-                <div className="mt-4 pt-4 border-t border-white/10">
-                    <p className="text-white/60 text-xs">
-                        💡 Fix your code before the timer expires to save your reputation! You can fix it directly on GitHub or mark it as fixed if you've already resolved the issue.
+                <div className="mt-8 pt-6 border-t-4 border-black">
+                    <p className="text-black font-black uppercase tracking-widest text-[10px]">
+                        💡 FIX YOUR CODE BEFORE THE TIMER EXPIRES TO SAVE YOUR REPUTATION!
                     </p>
                 </div>
             </div>

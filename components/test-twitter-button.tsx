@@ -31,10 +31,10 @@ export function TestTwitterButton() {
             type="button"
             onClick={handleTestClick}
             disabled={isLoading}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-6 py-3 bg-white border-4 border-black text-black font-black uppercase tracking-widest text-xs shadow-neo-sm hover:shadow-neo-md hover:-translate-y-1 active:translate-y-0 active:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
             <TwitterIcon className="w-4 h-4" />
-            {isLoading ? "Sending..." : "Send Test Tweet"}
+            {isLoading ? "SENDING..." : "SEND TEST TWEET"}
         </button>
     );
 }

@@ -79,16 +79,16 @@ export function SocialMediaConnections({ linkedInConnected, twitterConnected, ha
     };
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-6">
             {/* LinkedIn */}
-            <div className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl">
-                <div className="flex items-center gap-4">
-                    <div className="p-3 bg-blue-600/20 border border-blue-500/30 rounded-lg">
-                        <LinkedInIcon className="w-6 h-6 text-blue-400" />
+            <div className="flex items-center justify-between p-6 bg-white border-4 border-black shadow-neo-xs">
+                <div className="flex items-center gap-6">
+                    <div className={`p-4 border-4 border-black ${linkedInConnected ? "bg-neo-muted" : "bg-neo-muted/20"}`}>
+                        <LinkedInIcon className="w-8 h-8 text-black" />
                     </div>
                     <div>
-                        <h3 className="text-white font-medium">LinkedIn</h3>
-                        <p className="text-white/60 text-sm">
+                        <h3 className="text-xl font-black text-black uppercase tracking-tight">LinkedIn</h3>
+                        <p className="text-black font-bold uppercase tracking-widest text-[10px] opacity-60">
                             {"Connect your LinkedIn account"}
                         </p>
                     </div>
@@ -97,14 +97,14 @@ export function SocialMediaConnections({ linkedInConnected, twitterConnected, ha
                     <button
                         onClick={() => handleUnlink("linkedin")}
                         disabled={isUnlinking === "linkedin"}
-                        className="px-6 py-2.5 bg-green-600/20 hover:bg-green-600/30 border border-green-500/30 text-green-400 font-medium rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-green-500/30 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                        className="px-6 py-3 bg-neo-muted border-4 border-black text-black font-black uppercase tracking-widest text-xs shadow-neo-sm hover:shadow-neo-md hover:-translate-y-1 active:translate-y-0 active:shadow-none transition-all disabled:opacity-50"
                     >
                         {isUnlinking === "linkedin" ? "Unlinking..." : "Connected"}
                     </button>
                 ) : (
                     <button
                         onClick={handleConnectLinkedIn}
-                        className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/30"
+                        className="px-8 py-3 bg-white border-4 border-black text-black font-black uppercase tracking-widest text-xs shadow-neo-sm hover:shadow-neo-md hover:-translate-y-1 active:translate-y-0 active:shadow-none transition-all"
                     >
                         Connect
                     </button>
@@ -112,14 +112,14 @@ export function SocialMediaConnections({ linkedInConnected, twitterConnected, ha
             </div>
 
             {/* X (Twitter) */}
-            <div className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl">
-                <div className="flex items-center gap-4">
-                    <div className="p-3 bg-gray-600/20 border border-gray-500/30 rounded-lg">
-                        <TwitterIcon className="w-6 h-6 text-gray-400" />
+            <div className="flex items-center justify-between p-6 bg-white border-4 border-black shadow-neo-xs">
+                <div className="flex items-center gap-6">
+                    <div className={`p-4 border-4 border-black ${twitterConnected ? "bg-neo-secondary" : "bg-neo-secondary/20"}`}>
+                        <TwitterIcon className="w-8 h-8 text-black" />
                     </div>
                     <div>
-                        <h3 className="text-white font-medium">X (Twitter)</h3>
-                        <p className="text-white/60 text-sm">
+                        <h3 className="text-xl font-black text-black uppercase tracking-tight">X (Twitter)</h3>
+                        <p className="text-black font-bold uppercase tracking-widest text-[10px] opacity-60">
                             {"Connect your X account"}
                         </p>
                     </div>
@@ -128,14 +128,14 @@ export function SocialMediaConnections({ linkedInConnected, twitterConnected, ha
                     <button
                         onClick={() => handleUnlink("twitter")}
                         disabled={isUnlinking === "twitter"}
-                        className="px-6 py-2.5 bg-green-600/20 hover:bg-green-600/30 border border-green-500/30 text-green-400 font-medium rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-green-500/30 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                        className="px-6 py-3 bg-neo-secondary border-4 border-black text-black font-black uppercase tracking-widest text-xs shadow-neo-sm hover:shadow-neo-md hover:-translate-y-1 active:translate-y-0 active:shadow-none transition-all disabled:opacity-50"
                     >
                         {isUnlinking === "twitter" ? "Unlinking..." : "Connected"}
                     </button>
                 ) : (
                     <button
                         onClick={handleConnectTwitter}
-                        className="px-6 py-2.5 bg-gray-700 hover:bg-gray-600 text-white font-medium rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-gray-500/30"
+                        className="px-8 py-3 bg-white border-4 border-black text-black font-black uppercase tracking-widest text-xs shadow-neo-sm hover:shadow-neo-md hover:-translate-y-1 active:translate-y-0 active:shadow-none transition-all"
                     >
                         Connect
                     </button>

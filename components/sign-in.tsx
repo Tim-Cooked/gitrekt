@@ -11,7 +11,7 @@ export function SignIn() {
         >
             <button
                 type="submit"
-                className="group relative inline-flex items-center gap-3 rounded-full bg-linear-to-r from-purple-600 via-pink-600 to-orange-500 px-8 py-4 text-lg font-bold text-white shadow-2xl shadow-purple-500/50 hover:shadow-purple-500/70 hover:scale-105 transition-all duration-200 hover:from-purple-700 hover:via-pink-700 hover:to-orange-600"
+                className="group relative inline-flex items-center gap-3 bg-neo-accent border-4 border-black px-8 py-4 text-xl font-black text-black uppercase tracking-widest shadow-neo-md hover:shadow-neo-lg hover:-translate-y-0.5 active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all duration-100"
             >
                 <Code className="w-6 h-6 group-hover:rotate-12 transition-transform" />
                 <span>Sign in with GitHub</span>
