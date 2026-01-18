@@ -293,9 +293,9 @@ export default function RepoHistoryPage({ params }: { params: Promise<{ slug: st
                         </div>
                         <p className="text-black font-bold text-lg leading-tight uppercase tracking-widest opacity-60">
                             Recent activity in the chamber
-                            {roasts.length > 0 && (
+                            {roasts.filter(r => r.failReason).length > 0 && (
                                 <span className="ml-4 text-neo-accent font-black">
-                                    • {roasts.length} ROAST{roasts.length !== 1 ? "S" : ""} DETECTED 🔥
+                                    • {roasts.filter(r => r.failReason).length} ROAST{roasts.filter(r => r.failReason).length !== 1 ? "S" : ""} DETECTED 🔥
                                 </span>
                             )}
                         </p>
@@ -304,14 +304,14 @@ export default function RepoHistoryPage({ params }: { params: Promise<{ slug: st
                     {/* Tracking Settings Section */}
                     {trackingConfig && (
                         <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-3 bg-white border-4 border-black p-3 shadow-neo-sm">
+                            <div className="flex items-center gap-3 bg-white border-4 border-black p-2 shadow-neo-sm">
                                 {[
                                     { icon: LinkedInIcon, active: trackingConfig.postToLinkedIn, color: 'bg-neo-muted', label: 'LinkedIn' },
                                     { icon: TwitterIcon, active: trackingConfig.postToTwitter, color: 'bg-neo-secondary', label: 'X' },
-                                    { icon: Skull, active: trackingConfig.yoloMode, color: 'bg-neo-accent', label: 'Hardcore' },
-                                    { icon: RotateCcw, active: trackingConfig.revertCommit, color: 'bg-neo-muted', label: 'Revert' }
+                                    { icon: RotateCcw, active: trackingConfig.revertCommit, color: 'bg-neo-muted', label: 'Revert' },
+                                    { icon: Skull, active: trackingConfig.yoloMode, color: 'bg-neo-accent', label: 'Hardcore' }
                                 ].map((social, i) => (
-                                    <div
+                                    <div 
                                         key={i}
                                         className={`p-2 border-2 border-black transition-all ${social.active ? social.color : 'bg-white opacity-20'}`}
                                         title={`${social.label} ${social.active ? 'enabled' : 'disabled'}`}

@@ -320,19 +320,19 @@ export function RepoList({ initialRepos = [] }: RepoListProps) {
                                     
                                     {/* Tracking Settings Icons */}
                                     {isTracked && trackedRepoConfigs[repo.fullName] && (
-                                        <div className="flex items-center gap-2 shrink-0 bg-white border-2 border-black p-2 shadow-neo-sm">
+                                        <div className="flex items-center gap-3 shrink-0 bg-white border-4 border-black p-2 shadow-neo-sm">
                                             {[
                                                 { icon: LinkedInIcon, active: trackedRepoConfigs[repo.fullName].postToLinkedIn, color: 'bg-neo-muted', label: 'LinkedIn' },
                                                 { icon: TwitterIcon, active: trackedRepoConfigs[repo.fullName].postToTwitter, color: 'bg-neo-secondary', label: 'X' },
-                                                { icon: Skull, active: trackedRepoConfigs[repo.fullName].yoloMode, color: 'bg-neo-accent', label: 'Hardcore' },
-                                                { icon: RotateCcw, active: trackedRepoConfigs[repo.fullName].revertCommit, color: 'bg-neo-muted', label: 'Revert' }
+                                                { icon: RotateCcw, active: trackedRepoConfigs[repo.fullName].revertCommit, color: 'bg-neo-muted', label: 'Revert' },
+                                                { icon: Skull, active: trackedRepoConfigs[repo.fullName].yoloMode, color: 'bg-neo-accent', label: 'Hardcore' }
                                             ].map((social, i) => (
                                                 <div 
                                                     key={i}
                                                     className={`p-2 border-2 border-black transition-all ${social.active ? social.color : 'bg-white opacity-20'}`}
                                                     title={`${social.label} ${social.active ? 'enabled' : 'disabled'}`}
                                                 >
-                                                    <social.icon className="w-4 h-4 text-black" />
+                                                    <social.icon className="w-5 h-5 text-black" />
                                                 </div>
                                             ))}
                                         </div>

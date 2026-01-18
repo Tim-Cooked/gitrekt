@@ -23,7 +23,9 @@ export async function GET(
                 postToLinkedIn: true,
                 postToTwitter: true,
                 yoloMode: true,
+                revertCommit: true,
                 timerMinutes: true,
+                createdAt: true,
             },
         });
 
@@ -37,7 +39,9 @@ export async function GET(
                 postToLinkedIn: trackedRepo.postToLinkedIn,
                 postToTwitter: trackedRepo.postToTwitter,
                 yoloMode: trackedRepo.yoloMode,
+                revertCommit: trackedRepo.revertCommit,
                 timerMinutes: trackedRepo.timerMinutes,
+                createdAt: trackedRepo.createdAt.toISOString(),
             },
         });
     } catch (error) {
