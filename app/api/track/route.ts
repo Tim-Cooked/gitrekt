@@ -189,11 +189,15 @@ export async function GET(request: Request) {
     }
 }
 
+
+
 export async function POST(request: Request) {
     const session = await auth();
 
     const accessToken = (session as { accessToken?: string })?.accessToken;
-    if (!accessToken) {
+    const userId = session?.user?.id;
+
+    if (!accessToken || !userId) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -222,49 +226,47 @@ export async function POST(request: Request) {
             }
 
             try {
-                // Get LinkedIn token from session if available
-                let linkedInToken = (session as { linkedinAccessToken?: string })?.linkedinAccessToken || null;
-                
-                // If not in session but LinkedIn posting is enabled, try to get from UserSession database
-                if (!linkedInToken && config?.postToLinkedIn) {
-                    try {
-                        const githubUser = (session as { githubUser?: { id?: string } })?.githubUser;
-                        if (githubUser?.id) {
-                            // @ts-expect-error - Prisma generates userSession from UserSession model
-                            const dbUser = await prisma.userSession.findUnique({
-                                where: { githubId: githubUser.id },
-                                select: { linkedInToken: true },
-                            });
-                            linkedInToken = dbUser?.linkedInToken || null;
+                // Get LinkedIn token from Account table if enabled
+                let linkedInToken: string | null = null;
+
+                if (config?.postToLinkedIn) {
+                    const linkedInAccount = await prisma.account.findFirst({
+                        where: {
+                            userId: userId,
+                            provider: "linkedin"
                         }
-                    } catch (error) {
-                        console.error("Error fetching LinkedIn token from database:", error);
+                    });
+
+                    if (linkedInAccount?.access_token) {
+                        linkedInToken = linkedInAccount.access_token;
+                    } else {
+                        console.warn(`[WARN] LinkedIn posting enabled but no token found for user ${userId}`);
                     }
                 }
-                
-                // Store in database with config
+
+                // Store in database with config and userId
                 await prisma.trackedRepo.upsert({
                     where: { repoName: repoFullName },
-                    update: { 
+                    update: {
                         accessToken: accessToken,
+                        userId: userId,
                         postToLinkedIn: config?.postToLinkedIn ?? false,
                         postToTwitter: config?.postToTwitter ?? false,
                         yoloMode: config?.yoloMode ?? false,
                         revertCommit: config?.revertCommit ?? false,
                         timerMinutes: config?.timerMinutes ?? 30,
-                        // Only update linkedInToken if we have one and LinkedIn posting is enabled
-                        // Set to null if posting is disabled to clear any existing token
-                        linkedInToken: config?.postToLinkedIn && linkedInToken ? linkedInToken : null,
+                        linkedInToken: linkedInToken,
                     },
-                    create: { 
-                        repoName: repoFullName, 
+                    create: {
+                        repoName: repoFullName,
                         accessToken: accessToken,
+                        userId: userId,
                         postToLinkedIn: config?.postToLinkedIn ?? false,
                         postToTwitter: config?.postToTwitter ?? false,
                         yoloMode: config?.yoloMode ?? false,
                         revertCommit: config?.revertCommit ?? false,
                         timerMinutes: config?.timerMinutes ?? 30,
-                        linkedInToken: config?.postToLinkedIn && linkedInToken ? linkedInToken : null,
+                        linkedInToken: linkedInToken,
                     },
                 });
             } catch (error) {
@@ -279,13 +281,14 @@ export async function POST(request: Request) {
             } catch (error) {
                 console.error("Error installing workflow:", error);
                 const errorMsg = error instanceof Error ? error.message : "Failed to install workflow";
-                throw new Error(`Workflow installation failed: ${errorMsg}`);
+                // Don't fail the whole request if workflow install fails (it might already exist)
+                console.warn(`Workflow installation warning: ${errorMsg}`);
             }
         } else {
             // Remove from database
             await prisma.trackedRepo
                 .delete({ where: { repoName: repoFullName } })
-                .catch(() => {});
+                .catch(() => { });
 
             // Delete webhook and workflow
             try {

@@ -23,25 +23,50 @@ export async function GET() {
     }
 
     try {
-        // Fetch all repos (including private ones)
-        const reposResponse = await fetch("https://api.github.com/user/repos?per_page=100&sort=updated", {
-            headers: {
-                Authorization: `Bearer ${accessToken}`,
-                Accept: "application/vnd.github.v3+json",
-            },
-        });
+        // Fetch ALL repos including private ones
+        // Use visibility=all and affiliation to get everything the user has access to
+        const allRepos: GitHubRepo[] = [];
+        let page = 1;
+        const perPage = 100;
 
-        if (!reposResponse.ok) {
-            const errorText = await reposResponse.text().catch(() => "Unknown error");
-            console.error(`GitHub API error: ${reposResponse.status} - ${errorText}`);
-            throw new Error(`GitHub API error: ${reposResponse.status} - ${errorText}`);
+        while (true) {
+            const reposResponse = await fetch(
+                `https://api.github.com/user/repos?per_page=${perPage}&page=${page}&sort=updated&visibility=all&affiliation=owner,collaborator,organization_member`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`,
+                        Accept: "application/vnd.github.v3+json",
+                    },
+                }
+            );
+
+            if (!reposResponse.ok) {
+                const errorText = await reposResponse.text().catch(() => "Unknown error");
+                console.error(`GitHub API error: ${reposResponse.status} - ${errorText}`);
+                throw new Error(`GitHub API error: ${reposResponse.status} - ${errorText}`);
+            }
+
+            const repos: GitHubRepo[] = await reposResponse.json();
+            allRepos.push(...repos);
+
+            // If we got fewer repos than requested, we've reached the end
+            if (repos.length < perPage) {
+                break;
+            }
+
+            page++;
+            
+            // Safety limit to prevent infinite loops
+            if (page > 10) {
+                console.warn("Reached page limit for repo fetching");
+                break;
+            }
         }
-
-        const repos: GitHubRepo[] = await reposResponse.json();
 
         // Fetch tracked repos from database with config
         let trackedRepoSet = new Set<string>();
         let trackedRepoConfigs: Record<string, { postToLinkedIn: boolean; postToTwitter: boolean; yoloMode: boolean; revertCommit: boolean }> = {};
+        
         try {
             const trackedRepos: Array<{ repoName: string; postToLinkedIn: boolean; postToTwitter: boolean; yoloMode: boolean; revertCommit: boolean }> = await prisma.trackedRepo.findMany({
                 select: { 
@@ -68,7 +93,7 @@ export async function GET() {
         }
 
         // Transform repos to include only needed data
-        const formattedRepos = repos.map((repo) => ({
+        const formattedRepos = allRepos.map((repo) => ({
             id: repo.id,
             name: repo.name,
             fullName: repo.full_name,

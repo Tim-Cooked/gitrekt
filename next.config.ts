@@ -10,7 +10,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "media.licdn.com",
+        hostname: "pbs.twimg.com",
       },
     ],
   },

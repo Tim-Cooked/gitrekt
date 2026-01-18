@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { deleteRepository, revertToLastCommit } from "@/lib/github";
-import { generateLinkedInPost } from "@/lib/llm";
+import { postRoastToSocial } from "@/lib/social";
 
 export async function GET(req: NextRequest) {
     // Verify cron secret to prevent unauthorized access
@@ -139,6 +139,33 @@ export async function GET(req: NextRequest) {
                 data: { posted: true },
             });
 
+            // 🆕 POST TO SOCIAL MEDIA
+            if (repo.postToTwitter || repo.postToLinkedIn) {
+                try {
+                    console.log(`📱 Posting roast to social media for ${repo.repoName}`);
+                    
+                    const socialResults = await postRoastToSocial(
+                        repo.repoName,
+                        roast.roast || `🔥 Code failure in ${repo.repoName}! #GitRekt`,
+                        repo.postToTwitter,
+                        repo.postToLinkedIn
+                    );
+
+                    for (const result of socialResults) {
+                        if (result.success) {
+                            actions.push(`posted_to_${result.platform}`);
+                            console.log(`✅ Posted to ${result.platform}: ${result.postId}`);
+                        } else {
+                            actions.push(`${result.platform}_failed: ${result.error}`);
+                            console.error(`❌ Failed to post to ${result.platform}: ${result.error}`);
+                        }
+                    }
+                } catch (error) {
+                    console.error(`❌ Social media posting error:`, error);
+                    actions.push("social_posting_error");
+                }
+            }
+
             // Handle revert commit - revert to previous commit
             if (repo.revertCommit && roast.commitSha) {
                 try {
@@ -166,11 +193,14 @@ export async function GET(req: NextRequest) {
                     }).catch((e) => {
                         console.error(`Failed to clean up tracked repo: ${e}`);
                     });
-                    
                 } catch (error) {
                     console.error(`❌ Failed to delete repo ${repo.repoName}:`, error);
                     actions.push("repo_deletion_failed");
                 }
+            }
+
+            if (actions.length === 0) {
+                actions.push("roast_recorded_only");
             }
 
             results.push({
@@ -178,8 +208,11 @@ export async function GET(req: NextRequest) {
                 repo: roast.repoName,
                 actor: roast.actor,
                 commitMessage: roast.commitMessage,
+                roast: roast.roast?.substring(0, 100) + "...",
                 yoloMode: repo.yoloMode,
                 revertCommit: repo.revertCommit,
+                postToTwitter: repo.postToTwitter,
+                postToLinkedIn: repo.postToLinkedIn,
                 actions,
             });
         }
