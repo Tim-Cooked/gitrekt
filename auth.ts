@@ -4,8 +4,6 @@ import { cookies } from "next/headers"
 import GitHub from "next-auth/providers/github"
 import Twitter from "next-auth/providers/twitter"
 import LinkedIn from "@auth/core/providers/linkedin"
-import { prisma } from "@/lib/prisma";
-import LinkedIn from "@auth/core/providers/linkedin"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import { prisma } from "@/lib/prisma"
 
